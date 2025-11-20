@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('dni')->unique();
+            $table->string('email')->nullable();
+            $table->string('telefono')->nullable();
             $table->timestamps();
 
             // Indices para acelerar busquedas

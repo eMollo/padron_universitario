@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserImportController;
 #use App\Http\Controllers\FacultadController;
 #use App\Http\Controllers\SedeController;
 #use App\Http\Controllers\ClaustroController;
@@ -20,3 +21,6 @@ Route::get('/claustros', [ClaustroController::class, 'index']);
 /*Route::resource('padrones', PadronController::class)->only([
     'index', 'create', 'store', 'show', 'destroy'
 ]);*/
+
+Route::get('import', [UserImportController::class, 'index']);
+Route::post('import', [UserImportController::class, 'store'])->name('import');

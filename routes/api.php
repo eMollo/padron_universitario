@@ -8,6 +8,7 @@ use App\Http\Controllers\SedeController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\PadronController;
 use App\Http\Controllers\PadronComparadorController;
+use App\Http\Controllers\ListaController;
 
 // PERSONAS
 Route::get('personas', [PersonaController::class, 'index']);
@@ -41,3 +42,7 @@ Route::post('padrones/importar', [PadronController::class, 'importar']);
 Route::delete('padrones/{id}', [PadronController::class, 'destroy']);
 
 Route::post('padrones/comparar', [PadronComparadorController::class, 'comparar']);
+
+Route::get('listas', [ListaController::class, 'index']);
+Route::get('listas/{id}', [ListaController::class, 'show']);
+Route::post('listas', [ListaController::class, 'store']); //crea lista

@@ -11,7 +11,7 @@ class Persona extends Model
 
     protected $table = 'personas';
 
-    protected $fillable = ['nombre', 'apellido', 'dni'];
+    protected $fillable = ['nombre', 'apellido', 'dni', 'telefono', 'email'];
 
     // Una persona puede tener muchas inscripciones
     public function inscripciones()
