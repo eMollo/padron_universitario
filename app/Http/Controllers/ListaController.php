@@ -99,7 +99,7 @@ class ListaController extends Controller
             return response()->json(['error'=>"Máximo titulares permitidos para '{$claustro->nombre}' es {$maxTitulares}."], 422);
         }
         if (count($suplentes) > $maxSuplentes) {
-            return response()->json(['error'=>"Máximo suplentes permitidos para '{$claustro->nombre}' es {$maxSupletes}."], 422);
+            return response()->json(['error'=>"Máximo suplentes permitidos para '{$claustro->nombre}' es {$maxSuplentes}."], 422);
         }
 
         //---Validar apoderado: buscar o crear persona y actualizar contacto---
@@ -113,7 +113,7 @@ class ListaController extends Controller
 
         //---Validar cada postulante: existencia persona + pertenencia a padron---
         $errores = [];
-        $validPostulantes = []; //cada item: ['persona' => PErsona, 'tipo' => titular/suplente, 'orden'=>n, 'legajo'=>... ]
+        $validPostulantes = []; //cada item: ['persona' => Persona, 'tipo' => titular/suplente, 'orden'=>n, 'legajo'=>... ]
 
         //Funcion auxiliar para chequear pertenencia a padron (superior => solo claustro + anio)
         $estaEnPadron = function ($personaId) use ($anio, $id_claustro) {
@@ -187,6 +187,46 @@ class ListaController extends Controller
                 'detalles' => $errores
             ], 422);
         }
+
+        // ---- VALIDAR QUE NO ESTÉN YA EN OTRA LISTA (versión segura) ----
+
+        // Obtener ids válidos de las personas que vienen en esta carga
+        $idsDePostulantes = collect($validPostulantes)
+            ->map(function($p) {
+                // aseguramos que 'persona' exista y tenga id
+                return (isset($p['persona']) && $p['persona'] && isset($p['persona']->id))
+                    ? $p['persona']->id
+                    : null;
+            })
+            ->filter()   // elimina nulls
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (!empty($idsDePostulantes)) {
+            $enOtrasListas = ListaPostulante::with(['persona','lista'])
+                ->whereIn('id_persona', $idsDePostulantes)
+                ->whereHas('lista', function($q) use ($anio) {
+                    $q->where('anio', $anio);
+                })
+                ->get();
+
+            if ($enOtrasListas->isNotEmpty()) {
+                return response()->json([
+                    'error' => 'No se puede cargar la lista: algunos postulantes ya pertenecen a otra lista del mismo año.',
+                    'detalles' => $enOtrasListas->map(function($lp) {
+                        return [
+                            'dni' => optional($lp->persona)->dni,
+                            'nombre' => optional($lp->persona) ? (optional($lp->persona)->apellido . ', ' . optional($lp->persona)->nombre) : null,
+                            'lista_tipo' => optional($lp->lista)->tipo,
+                            'lista_nombre' => optional($lp->lista)->nombre,
+                            'lista_anio' => optional($lp->lista)->anio,
+                        ];
+                    })
+            ], 422);
+            }
+        }
+
 
         // --------------- Crear lista + asignar numero incremental por (anio,tipo) ---------------
         return DB::transaction(function () use ($anio,$tipo,$request,$apoderado,$validPostulantes,$id_claustro) {
