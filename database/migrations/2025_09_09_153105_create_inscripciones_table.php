@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_persona')->constrained('personas')->onDelete('cascade');
             $table->foreignId('id_padron')->constrained('padrones')->onDelete('cascade');
-            $table->string('legajo');
+            $table->string('legajo')->nullable();
             $table->timestamps();
 
             //Una persona solo puede estar una vez en el mismo padrón

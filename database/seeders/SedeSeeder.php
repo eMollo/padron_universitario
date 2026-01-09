@@ -32,7 +32,7 @@ class SedeSeeder extends Seeder
             ['nombre' => 'San Martin de los Andes (Facultad de Ciencias Agrarias)', 'id_facultad' => 7],
             ['nombre' => 'Cipolletti (Facultad de Ciencias de la Educación)', 'id_facultad' => 8],
             ['nombre' => 'Neuquén (Facultad de Derecho y Ciencias Sociales)', 'id_facultad' => 9],
-            ['nombre' => 'General Roca  (Facultad de Derecho y Ciencias Sociales)', 'id_facultad' => 9],
+            ['nombre' => 'General Roca (Facultad de Derecho y Ciencias Sociales)', 'id_facultad' => 9],
             ['nombre' => 'Neuquén (Facultad de Economía y Administración)', 'id_facultad' => 10],
             ['nombre' => 'Neuquén (Facultad de Humanidades)', 'id_facultad' => 11],
             ['nombre' => 'Bariloche (Facultad de Humanidades)', 'id_facultad' => 11],
@@ -48,7 +48,7 @@ class SedeSeeder extends Seeder
             ['nombre' => 'Neuquén(Facultad de Turismo)', 'id_facultad' => 16],
             ['nombre' => 'Zapala (Facultad de Turismo)', 'id_facultad' => 16],
             ['nombre' => 'San Martin de los Andes (Asentamiento Universitario San Martin - FACA)', 'id_facultad' => 17],
-            ['nombre' => 'Zapala (Asentam Universitario Zapala - FAIN)', 'id_facultad' => 18],
+            ['nombre' => 'Zapala (Asentamiento Universitario Zapala - FAIN)', 'id_facultad' => 18],
         ]);
     }
 }

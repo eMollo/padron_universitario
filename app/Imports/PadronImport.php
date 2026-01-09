@@ -11,55 +11,66 @@ use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\ToModel;
 
-class PadronImport implements ToModel, WithHeadingRow
+class PadronImport implements ToCollection, WithHeadingRow
 {
-    /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+    protected int $id_padron;
 
-    protected $id_padron;
-    protected $id_sede;
-    
-    public function __construct($id_padron, $id_sede = null)
+    public function __construct(int $id_padron)
     {
         $this->id_padron = $id_padron;
-        $this->id_sede = $id_sede;
     }
 
-    public function model(array $row)
+    public function collection(Collection $rows)
     {
-        //Verificamos que tenga DNI
-        if (empty($row['dni'])){
-            return null;
+        $duplicados = [];
+        $vistos = [];
+
+        foreach ($rows as $row) {
+            if (empty($row['dni'])) {
+                continue;
+            }
+
+            // Normalizar
+            $dni = trim($row['dni']);
+            $legajo = $row['legajo'] ?? null;
+
+            // Buscar o crear persona
+            $persona = Persona::firstOrCreate(
+                ['dni' => $dni],
+                [
+                    'apellido' => trim(explode(',', $row['apellido_y_nombre'])[0] ?? ''),
+                    'nombre'   => trim(explode(',', $row['apellido_y_nombre'])[1] ?? ''),
+                ]
+            );
+
+            // CLAVE: detectar duplicado en el MISMO PADRÓN
+            $key = $persona->id . '-' . $this->id_padron;
+
+            if (isset($vistos[$key]) ||
+                Inscripcion::where('id_persona', $persona->id)
+                    ->where('id_padron', $this->id_padron)
+                    ->exists()
+            ) {
+                $duplicados[] = [
+                    'dni' => $persona->dni,
+                    'nombre' => "{$persona->apellido}, {$persona->nombre}",
+                    'motivo' => 'Persona duplicada en el mismo padrón'
+                ];
+                continue;
+            }
+
+            $vistos[$key] = true;
+
+            Inscripcion::create([
+                'id_persona' => $persona->id,
+                'id_padron'  => $this->id_padron,
+                'legajo'     => $legajo,
+            ]);
         }
 
-        //Dividir "Apellido y Nombre" (formato "Perez, Juan")
-        $apellido = null;
-        $nombre = null;
-
-        if (!empty($row['apellido_y_nombre'])){
-            $partes = explode(',', $row['apellido_y_nombre']);
-            $apellido = trim($partes[0] ?? '');
-            $nombre = trim($partes[1] ?? '');
+        //  Si hubo duplicados → abortar TODO
+        if (!empty($duplicados)) {
+            throw new \RuntimeException(json_encode($duplicados));
         }
-
-        //Buscar o crear persona
-        $persona = Persona::firstOrCreate(
-            ['dni' => $row['dni']],
-            [
-                'nombre' => $nombre,
-                'apellido' => $apellido,
-            ]
-        );
-
-        //Crear la inscripcion
-        return new Inscripcion([
-            'id_persona' => $persona->id,
-            'id_padron' => $this->id_padron,
-            'legajo' => $row['legajo'] ?? null,
-        ]);
     }
-
 }

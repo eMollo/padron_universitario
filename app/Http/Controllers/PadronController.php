@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
 
 class PadronController extends Controller {
     public function index()
@@ -34,48 +36,57 @@ class PadronController extends Controller {
     }
 
     public function importar(Request $request)
-    {
-        try{
-            $request->headers->set('Accept', 'application/json');
+{
+    $request->validate([
+        'archivo' => 'required|file|mimes:xlsx,csv,xls',
+        'anio' => 'required|integer',
+        'id_facultad' => 'required|exists:facultad,id',
+        'id_claustro' => 'required|exists:claustros,id',
+        'id_sede' => 'nullable|exists:sede,id',
+    ]);
 
-            $request->validate([
-                'archivo' => 'required|file|mimes:xlsx,csv,xls',
-                'anio' => 'required|integer',
-                'id_facultad' => 'required|exists:facultad,id',
-                'id_claustro' => 'required|exists:claustros,id',
-                'id_sede' => 'nullable|exists:sede,id',
-            ]);
+    DB::beginTransaction();
 
-        //CREAR EL PADRON ANTES DE IMPORTAR
-            $padron = Padron::create([
-                'anio' => $request->anio,
-                'id_facultad' => $request->id_facultad,
-                'id_claustro' => $request->id_claustro,
-                'id_sede' => $request->id_sede,
-                'origen_archivo' => $request->file('archivo')->getClientOriginalName(),
-                'importado_por' => auth()->user()->name ?? 'sistema',
-                'importado_el' => now(),
-            ]);
+    try {
+        $padron = Padron::create([
+            'anio' => $request->anio,
+            'id_facultad' => $request->id_facultad,
+            'id_claustro' => $request->id_claustro,
+            'id_sede' => $request->id_sede,
+            'origen_archivo' => $request->file('archivo')->getClientOriginalName(),
+            'importado_por' => auth()->user()->name ?? 'sistema',
+            'importado_el' => now(),
+        ]);
 
-        //IMPORTAR LOS DATOS DEL EXCEL
-            Excel::import(new PadronImport($padron->id, $request->id_sede), $request->file('archivo'));
+        Excel::import(new PadronImport($padron->id), $request->file('archivo'));
 
-            return response()->json([
-                'message' => 'Padrón importado correctamente',
-                'padron' => $padron,
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e){
-            return response()->json([
-                'error' => 'Error de validación',
-                'detalles' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error inesperado',
-                'detalle' => $e->getMessage()
-            ], 500);
-        }         
+        DB::commit();
+
+        return response()->json([
+            'mensaje' => 'Padrón importado correctamente',
+            'padron' => $padron
+        ]);
+
+    } catch (\RuntimeException $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'El padrón contiene personas duplicadas',
+            'duplicados' => json_decode($e->getMessage(), true)
+        ], 422);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'Error al importar padrón',
+            'detalle' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     public function destroy($id)
     {
@@ -89,5 +100,33 @@ class PadronController extends Controller {
 
         return response()->json(['message' => 'Padrón elminado correctamente']);
     }
+
+    /*private function detectarDuplicadosEnArchivo($archivo): array
+    {
+        $rows =\Maatwebsite\Excel\Facades\Excel::toArray([], $archivo)[0];
+
+        $vistos = [];
+        $duplicados = [];
+
+        foreach ($rows as $index => $row) {
+            if ($index === 0) continue; //encabezado
+
+            $dni = trim($row['dni'] ?? '');
+
+            if (!$dni) continue;
+
+            if (isset($vistos[$dni])) {
+                $duplicados[$dni] = [
+                    'dni' => $dni,
+                    'apellido_y_nombre' => $row['apellido_y_nombre'] ?? null,
+                    'motivo' => 'Persona duplicada en el mismo padrón'
+                ];
+            } else {
+                $vistos[$dni] = true;
+            }
+        }
+
+        return array_values($duplicados);
+    }*/
 }
 

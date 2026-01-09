@@ -28,7 +28,7 @@ class PadronComparadorController extends Controller
         }
 
         if ($request->id_facultad) {
-            $query->where('id-facultad', $request->id_facultad);
+            $query->where('id_facultad', $request->id_facultad);
         }
 
         $padrones = $query->get();
@@ -79,8 +79,8 @@ class PadronComparadorController extends Controller
 
         //Devolver los resultados
         return response()->json([
-            'duplicados_exactos' => $duplicadosExactos,
-            'duplicados_posibles' => $duplicadosPosibles,
+            'DUPLICADOS_EXACTOS' => $duplicadosExactos,
+            'DUPLICADOS_POSIBLES' => $duplicadosPosibles,
         ]);
     }
 
