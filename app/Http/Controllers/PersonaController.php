@@ -51,7 +51,7 @@ class PersonaController extends Controller
         $validated = $request->validate([
             'nombre' => 'sometimes|string|max:100',
             'apellido' => 'sometimes|string|max:100',
-            'dni' => 'sometimes|string|unique:personas,dni,' . $persona->id_persona . ',id_persona',
+            'dni' => 'sometimes|string|unique:personas,dni,' . $persona->id . ',id', #MODIFICADO (id_persona -> id)
         ]);
 
         $persona->update($validated);

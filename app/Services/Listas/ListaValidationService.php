@@ -131,147 +131,243 @@ class ListaValidationService
 
         if (!empty($errors)) return ['ok'=>false,'errors'=>$errors,'postulantes'=>[]];
 
-        $validPostulantes = [];
+        //VERIFICAR APODERADO
 
-        //chequear si persona existe y si está en los padrones (anio + claustro)
-        $estaEnPadron = function (Persona $persona) use ($anio, $tipo, $payload, $id_claustro) : bool {
-            //Superior: requiere claustro + año
-            if ($tipo === 'superior') {
-                $padronIds = Padron::where('anio', $anio)
-                    ->where('id_claustro', $id_claustro)
-                    ->pluck('id');
-                if ($padronIds->isEmpty()) return false;
-                return Inscripcion::whereIn('id_padron', $padronIds)
-                    ->where('id_persona', $persona->id)
-                    ->exists();
+        if (!empty($payload['apoderado']['dni'])) {
+
+            $apo = Persona::where('dni', $payload['apoderado']['dni'])->first();
+
+            if (!$apo) {
+                $errors['apoderado'][] = [
+                    'message' => 'El apoderado no existe en el sistema',
+                    'dni' => $payload['apoderado']['dni'],
+                ];
+            } elseif (!$this->personaEstaEnPadron($apo, $tipo, $anio, $id_claustro, $payload)) {
+                $errors['apoderado'][] = [
+                    'message' => 'El apoderado no pertenece al padrón correspondiente',
+                    'dni' => $apo->dni,
+                    'nombre' => "{$apo->apellido}, {$apo->nombre}",
+                ];
+            }
+        }
+
+        $result = $this->validarPostulantes(
+        $payload['postulantes'],
+        $tipo,
+        $anio,
+        $id_claustro,
+        $payload
+    );
+
+    if (!$result['ok']) {
+        return $result;
+    }
+
+    $postulantesValidos = $result['postulantes'];
+
+    return [
+        'ok' => true,
+        'errors' => [],
+        'postulantes' => $postulantesValidos
+    ];
+    }
+
+    /**
+    * Valida postulantes de una lista electoral.
+    *
+    * Reglas:
+    * - DNI siempre obligatorio
+    * - Legajo obligatorio solo para superior y directivo
+    * - Apellido y nombre se ignoran (solo frontend)
+    * - Si un postulante es inválido → falla toda la lista
+    *
+    * @return array ['ok'=>bool, 'errors'=>[], 'postulantes'=>[]]
+    */
+    private function validarPostulantes(
+        array $postulantesInput,
+        string $tipo,
+        int $anio,
+        ?int $id_claustro,
+        array $payload
+    ): array {
+        $postulantesValidos = [];
+        $postulantesIds = [];
+
+        foreach (['titulares', 'suplentes'] as $rol) {
+
+            if (empty($postulantesInput[$rol])) {
+                continue;
             }
 
-            // Directivo: lista directivo tiene relacion con facultad + claustro
-            if ($tipo === 'directivo') {
-                // si viene id_facultad la lista es por facultad+claustro
-                if (!empty($payload['id_facultad'])) {
-                    $padronIds = Padron::where('anio', $anio)
-                        ->where('id_claustro', $id_claustro)
-                        ->where('id_facultad', $payload['id_facultad'])
-                        ->pluck('id');
-                } else {
-                    // si no viene facultad, buscar en todo el anio+claustro
-                    $padronIds = Padron::where('anio', $anio)
-                        ->where('id_claustro', $id_claustro)
-                        ->pluck('id');
+            foreach ($postulantesInput[$rol] as $index => $data) {
+
+
+                // 1. Validación mínima de input
+
+
+                if (empty($data['dni'])) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'Falta DNI del postulante',
+                            'rol'     => $rol,
+                            'orden'   => $index + 1,
+                        ]],
+                        'postulantes' => []
+                    ];
                 }
-                if ($padronIds->isEmpty()) return false;
-                return Inscripcion::whereIn('id_padron', $padronIds)
-                    ->where('id_persona', $persona->id)
-                    ->exists();
-            }
 
-            //Decano: por facultad + anio
-            if ($tipo === 'decano') {
-                if (empty($payload['id_facultad'])) return false;
-                $padronIds = Padron::where('anio', $anio)
-                    ->where('id_facultad', $payload['id_facultad'])
-                    ->pluck('id');
-                if ($padronIds->isEmpty()) return false;
-                return Inscripcion::whereIn('id_padron', $padronIds)
-                    ->where('id_persona', $persona->id)
-                    ->exists();
-            }
+                if (
+                    in_array($tipo, ['superior', 'directivo']) &&
+                    empty($data['legajo'])
+                ) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'Falta legajo del postulante',
+                            'dni'     => $data['dni'],
+                            'rol'     => $rol,
+                            'orden'   => $index + 1,
+                        ]],
+                        'postulantes' => []
+                    ];
+                }
 
-            //Rector -> busca en todos los padrones del año
-            if ($tipo === 'rector') {
-                $padronIds = Padron::where('anio', $anio)->pluck('id');
-                if ($padronIds->isEmpty()) return false;
-                return Inscripcion::whereIn('id_padron', $padronIds)
-                    ->where('id_persona', $persona->id)
-                    ->exists();
-            }
 
-            return false;
+                // 2. Persona existente
+
+
+                $persona = Persona::where('dni', $data['dni'])->first();
+
+                if (!$persona) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'Postulante inexistente en el sistema',
+                            'dni'     => $data['dni'],
+                        ]],
+                        'postulantes' => []
+                    ];
+                }
+
+
+                // 3. Pertenencia a padrón
+
+
+                if (
+                    !$this->personaEstaEnPadron(
+                        $persona,
+                        $tipo,
+                        $anio,
+                        $id_claustro,
+                        $payload
+                    )
+                ) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'Postulante fuera del padrón habilitado',
+                            'dni'     => $persona->dni,
+                            'nombre'  => "{$persona->apellido}, {$persona->nombre}",
+                        ]],
+                        'postulantes' => []
+                    ];
+                }
+
+
+                // 4. Construcción final
+
+
+                $postulantesValidos[] = [
+                    'persona' => $persona,
+                    'tipo'    => $rol === 'titulares' ? 'titular' : 'suplente',
+                    'orden'   => $index + 1,
+                    'legajo'  => in_array($tipo, ['superior', 'directivo'])
+                                    ? $data['legajo']
+                                    : null,
+                ];
+
+                $postulantesIds[] = $persona->id;
+            }
+        }
+
+
+        // 5. Conflicto con otras listas
+
+
+        if (!empty($postulantesIds)) {
+
+            $conflictos = ListaPostulante::with(['persona', 'lista'])
+                ->whereIn('id_persona', array_unique($postulantesIds))
+                ->whereHas('lista', function ($q) use ($anio, $tipo) {
+                    $q->where('anio', $anio)
+                    ->where('tipo', $tipo);
+                })
+                ->get();
+
+            if ($conflictos->isNotEmpty()) {
+
+                $detalles = $conflictos->map(function ($lp) {
+                    return [
+                        'dni'          => $lp->persona->dni,
+                        'nombre'       => "{$lp->persona->apellido}, {$lp->persona->nombre}",
+                        'lista_tipo'   => $lp->lista->tipo,
+                        'lista_nombre' => $lp->lista->nombre,
+                        'lista_anio'   => $lp->lista->anio,
+                    ];
+                })->values();
+
+                return [
+                    'ok' => false,
+                    'errors' => [[
+                        'message'  => 'Algunos postulantes ya integran otra lista del mismo tipo y año',
+                        'detalles' => $detalles,
+                    ]],
+                    'postulantes' => []
+                ];
+            }
+        }
+
+        return [
+            'ok' => true,
+            'errors' => [],
+            'postulantes' => $postulantesValidos
+        ];
+    }
+
+
+    private function personaEstaEnPadron(
+        Persona $persona,
+        string $tipo,
+        int $anio,
+        ?int $id_claustro,
+        array $payload
+    ): bool {
+        
+        // 1. Determinar si el tipo es válido y configurar la base de la query
+        $tiposSoportados = ['superior', 'directivo', 'decano', 'rector'];
+        if (!in_array($tipo, $tiposSoportados)) return false;
+        
+        // 2. Validaciones tempranas
+        if (in_array($tipo, ['superior', 'directivo']) && empty($id_claustro)) return false;
+        if (in_array($tipo, ['directivo', 'decano']) && empty($payload['id_facultad'])) return false;
+
+        $padronQuery = Padron::where('anio', $anio);
+
+        // 3. Aplicar filtros específicos según tipo
+        match ($tipo) {
+            'superior'  => $padronQuery->where('id_claustro', $id_claustro),
+            'directivo' => $padronQuery->where('id_claustro', $id_claustro)
+                                        ->where('id_facultad', $payload['id_facultad']),
+            'decano'    => null,
+            'rector'    => null, // Solo anio
         };
 
-        //Validar titulares
-        foreach ($titulares as $idx => $t) {
-            $dni = $t['dni'] ?? null;
-            if (!$dni) {
-                $errors[] = ['tipo'=>'titular','orden'=>$idx+1,'motivo'=>'Falta DNI'];
-                continue;
-            }
-            $persona = Persona::where('dni', $dni)->first();
-            if (!$persona) {
-                $errors[] = ['tipo'=>'titular','orden'=>$idx+1,'dni'=>$dni,'motivo'=>'Persona no encontrada en tabla personas'];
-                continue;
-            }
-            if (!$estaEnPadron($persona)) {
-                $errors[] = ['tipo'=>'titular','orden'=>$idx+1,'dni'=>$dni,'motivo'=>'No figura en padrón correspondiente'];
-                continue;
-            }
-            $validPostulantes[] = [
-                'persona' =>$persona,
-                'tipo' => 'titular',
-                'orden' => $idx+1,
-                'legajo' => $t['legajo'] ?? null,
-            ];
-        }
-        
-        //Validar suplentes
-        foreach ($suplentes as $idx => $s) {
-            $dni = $s['dni'] ?? null;
-            if (!$dni) {
-                $errors[] = ['tipo'=>'suplente','orden'=>$idx+1,'motivo'=>'Falta DNI'];
-                continue;
-            }
-            $persona = Persona::where('dni', $dni)->first();
-            if (!$persona) {
-                $errors[] = ['tipo'=>'suplente','orden'=>$idx+1,'dni'=>$dni,'motivo'=>'Persona no encontrada en tabla personas'];
-                continue;
-            }
-            if (!$estaEnPadron($persona)) {
-                $errors[] = ['tipo'=>'suplente','orden'=>$idx+1,'dni'=>$dni,'motivo'=>'No figura en padrón correspondiente'];
-                continue;
-            }
-            $validPostulantes[] = [
-                'persona' => $persona,
-                'tipo' => 'suplente',
-                'orden' => $idx+1,
-                'legajo' => $s['legajo'] ?? null,
-            ];
-        }
-
-        if (!empty($errors)) {
-            return ['ok'=>false, 'errors'=>$errors, 'postulantes'=>[]];
-        }
-
-        //Validar que ninguno de los postulantes ya pertenezca a otra lista del mismo año
-        $idsDePostulantes = collect($validPostulantes)
-            ->map(fn($p) => $p['persona']->id)
-            ->unique()
-            ->values()
-            ->toArray();
-        
-        if (!empty($idsDePostulantes)) {
-            $enOtrasListas = ListaPostulante::with('lista', 'persona')
-                ->whereIn('id_persona', $idsDePostulantes)
-                ->whereHas('lista', function($q) use ($anio) {
-                    $q->where('anio', $anio);
-                })->get();
-
-            if ($enOtrasListas->isNotEmpty()) {
-                $det = $enOtrasListas->map(function($lp){
-                    return [
-                        'dni' => $lp->persona?->dni,
-                        'nombre' => $lp->persona ? $lp->persona->apellido . ', ' . $lp->persona->nombre : null,
-                        'lista_tipo' => $lp->lista?->tipo,
-                        'lista_nombre' => $lp->lista?->nombre,
-                        'lista_anio' => $lp->lista?->anio,
-                    ];
-                })->values()->all();
-
-                return ['ok'=>false,'errors'=>[['message'=>'Algunos postulantes ya están en otra lista del mismo año','detalles'=>$det]],'postulantes'=>[]];
-            }
-        }
-
-        return ['ok'=>true,'errors'=>[],'postulantes'=>$validPostulantes];
+        // 4. Ejecutar la verificación final
+        // Usamos el query builder directamente en el whereIn para máxima eficiencia
+        return Inscripcion::where('id_persona', $persona->id)
+            ->whereIn('id_padron', $padronQuery->select('id'))
+            ->exists();
     }
     
     public function __construct()

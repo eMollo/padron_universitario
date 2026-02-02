@@ -21,9 +21,10 @@ return new class extends Migration
             $table->foreignId('id_facultad')->nullable()->constrained('facultad')->onDelete('cascade');
             $table->foreignId('id_claustro')->nullable()->constrained('claustros')->onDelete('cascade');
             $table->foreignId('id_apoderado')->constrained('personas')->onDelete('cascade');
+            $table->string('estado_lista')->default('cargada'); //avales_faltantes , oficializada
             $table->timestamps();
 
-            $table->unique(['anio', 'tipo', 'numero']);
+            $table->unique(['anio', 'tipo', 'numero', 'id_claustro']);
         });
     }
 

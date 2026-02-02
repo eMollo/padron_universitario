@@ -48,6 +48,22 @@ class PadronController extends Controller {
     DB::beginTransaction();
 
     try {
+
+        $exists = Padron::where([
+        'anio' => $request->anio,
+        'id_claustro' => $request->id_claustro,
+        'id_facultad' => $request->id_facultad,
+        'id_sede' => $request->id_sede,
+        ])->exists();
+
+        if ($exists) {
+        return response()->json([
+            'error' => 'Ya existe un padrón para esa combinación'
+        ], 422);
+        }
+
+
+
         $padron = Padron::create([
             'anio' => $request->anio,
             'id_facultad' => $request->id_facultad,

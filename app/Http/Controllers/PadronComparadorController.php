@@ -34,7 +34,7 @@ class PadronComparadorController extends Controller
         $padrones = $query->get();
 
         if ($padrones->isEmpty()) {
-            return response()->json(['mensaje'=>'No se encontraron padrones para los filtros indicados', 404]);
+            return response()->json(['mensaje'=>'No se encontraron padrones para los filtros indicados'],404);
         }
 
         //Obtenemos todas las inscripciones de esos padrones

@@ -56,8 +56,8 @@ class ListaController extends Controller
         'tipo' => ['required', 'string', Rule::in(['superior','directivo','decano','rector'])],
         'nombre' => 'required|string|max:90',
         'sigla' => 'nullable|string|max:10',
-        'id_claustro' => 'required_if:tipo,superior|nullable|exists:claustros,id',
-        'id_facultad' => 'nullable|exists:facultad,id',
+        'id_claustro' => 'required_if:tipo,superior,directivo|nullable|exists:claustros,id',
+        'id_facultad' => 'required_if:tipo,directivo,decano|nullable|exists:facultad,id',
 
         'apoderado' => 'required|array',
         'apoderado.dni' => 'required|string',

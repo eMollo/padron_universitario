@@ -43,7 +43,7 @@ class ListaCreationService
         try {
             $result = DB::transaction(function () use ($anio,$tipo,$nombre,$sigla,$id_facultad,$id_claustro,$id_apoderado,$postulantes) {
 
-                $numero = $this->numberService->nextNumber($anio, $tipo);
+                $numero = $this->numberService->nextNumber($anio, $tipo, $id_claustro);
 
                 $lista = Lista::create([
                     'anio' => $anio,

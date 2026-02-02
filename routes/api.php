@@ -10,6 +10,8 @@ use App\Http\Controllers\PadronController;
 use App\Http\Controllers\PadronComparadorController;
 use App\Http\Controllers\ListaController;
 
+use App\Http\Controllers\AvalController;
+
 // PERSONAS
 Route::get('personas', [PersonaController::class, 'index']);
 Route::get('personas/{id}', [PersonaController::class, 'show']);
@@ -46,3 +48,6 @@ Route::post('padrones/comparar', [PadronComparadorController::class, 'comparar']
 Route::get('listas', [ListaController::class, 'index']);
 Route::get('listas/{id}', [ListaController::class, 'show']);
 Route::post('listas', [ListaController::class, 'store']); //crea lista
+
+
+Route::post('/listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
