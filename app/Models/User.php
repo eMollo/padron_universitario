@@ -6,11 +6,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Role;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -19,8 +22,9 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'email',
+        'user',
         'password',
+        'is_active',
     ];
 
     /**
@@ -33,11 +37,30 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
      */
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->roles->contains('name', $role);
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles->wherIn('name', $roles)->isNotEmpty();
+    }
     protected function casts(): array
     {
         return [
