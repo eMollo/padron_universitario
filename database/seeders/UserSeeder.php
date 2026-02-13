@@ -15,18 +15,31 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::firstOrCreate(
-            ['user' => 'admin'],
-            [
-                'name' => 'Administrador',
-                'password' => Hash::make('admin123'),
-                'is_active' => true,
-            ]
-        );
+        // Roles
+    $adminRole = Role::firstOrCreate(['name' => 'admin']);
+    $consultaRole = Role::firstOrCreate(['name' => 'consulta']);
 
-        $rolAdmin = Role::firstOrCreate(['name' => 'admin']);
+    // Admin
+    $admin = User::firstOrCreate(
+        ['user' => 'admin'],
+        [
+            'name' => 'Administrador',
+            'password' => Hash::make('admin123'),
+            'is_active' => true,
+        ]
+    );
+    $admin->roles()->syncWithoutDetaching([$adminRole->id]);
 
-        $admin->roles()->syncWithoutDetaching([$rolAdmin->id]);
+    // Consulta
+    $consulta = User::firstOrCreate(
+        ['user' => 'consulta'],
+        [
+            'name' => 'Usuario Consulta',
+            'password' => Hash::make('consulta123'),
+            'is_active' => true,
+        ]
+    );
+    $consulta->roles()->syncWithoutDetaching([$consultaRole->id]);
 
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\ToModel;
+use Illuminate\Support\Facades\DB;
 
 class PadronImport implements ToCollection, WithHeadingRow
 {
@@ -22,6 +23,7 @@ class PadronImport implements ToCollection, WithHeadingRow
 
     public function collection(Collection $rows)
     {
+        DB::transaction(function () use ($rows) {
         $duplicados = [];
         $vistos = [];
 
@@ -72,5 +74,6 @@ class PadronImport implements ToCollection, WithHeadingRow
         if (!empty($duplicados)) {
             throw new \RuntimeException(json_encode($duplicados));
         }
+    });
     }
 }

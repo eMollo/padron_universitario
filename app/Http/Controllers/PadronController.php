@@ -18,10 +18,42 @@ use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 class PadronController extends Controller {
-    public function index()
+    
+    public function index(Request $request)
     {
-        $padrones = Padron::with(['facultad', 'claustro', 'sede'])->get();
-        return response()->json($padrones);
+        $query = Padron::query();
+
+        // Filtros opcionales
+        if ($request->filled('anio')) {
+            $query->where('anio', $request->anio);
+        }
+
+        if ($request->filled('id_claustro')) {
+            $query->where('id_claustro', $request->id_claustro);
+        }
+
+        if ($request->filled('id_facultad')) {
+            $query->where('id_facultad', $request->id_facultad);
+        }
+
+        if ($request->filled('id_sede')) {
+            $query->where('id_sede', $request->id_sede);
+        }
+
+        return $query
+            ->with(['facultad', 'claustro', 'sede'])
+            ->withCount([
+                // solo activas
+                'inscripciones as inscripciones_activas_count' => function ($q) {
+                    $q->whereNull('deleted_at');
+                },
+                // totales (incluye soft deleted)
+                'inscripciones as inscripciones_totales_count'
+            ])
+            ->orderBy('anio', 'desc')
+            ->orderBy('id_facultad')
+            ->orderBy('id_claustro')
+            ->get();
     }
 
     public function show($id)
@@ -62,6 +94,7 @@ class PadronController extends Controller {
         ], 422);
         }
 
+        
 
 
         $padron = Padron::create([
@@ -70,7 +103,7 @@ class PadronController extends Controller {
             'id_claustro' => $request->id_claustro,
             'id_sede' => $request->id_sede,
             'origen_archivo' => $request->file('archivo')->getClientOriginalName(),
-            'importado_por' => auth()->user()->name ?? 'sistema',
+            'importado_por' => auth()->id(),
             'importado_el' => now(),
         ]);
 
@@ -114,35 +147,8 @@ class PadronController extends Controller {
 
         $padron->delete();
 
-        return response()->json(['message' => 'Padrón elminado correctamente']);
+        return response()->json(['message' => 'Padrón eliminado correctamente']);
     }
 
-    /*private function detectarDuplicadosEnArchivo($archivo): array
-    {
-        $rows =\Maatwebsite\Excel\Facades\Excel::toArray([], $archivo)[0];
-
-        $vistos = [];
-        $duplicados = [];
-
-        foreach ($rows as $index => $row) {
-            if ($index === 0) continue; //encabezado
-
-            $dni = trim($row['dni'] ?? '');
-
-            if (!$dni) continue;
-
-            if (isset($vistos[$dni])) {
-                $duplicados[$dni] = [
-                    'dni' => $dni,
-                    'apellido_y_nombre' => $row['apellido_y_nombre'] ?? null,
-                    'motivo' => 'Persona duplicada en el mismo padrón'
-                ];
-            } else {
-                $vistos[$dni] = true;
-            }
-        }
-
-        return array_values($duplicados);
-    }*/
 }
 

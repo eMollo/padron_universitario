@@ -48,9 +48,15 @@ class User extends Authenticatable
      */
 
     public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class);
-    }
+{
+    return $this->belongsToMany(
+        Role::class,
+        'role_user',
+        'user_id',
+        'role_id'
+    );
+}
+
 
     public function hasRole(string $role): bool
     {
@@ -59,7 +65,7 @@ class User extends Authenticatable
 
     public function hasAnyRole(array $roles): bool
     {
-        return $this->roles->wherIn('name', $roles)->isNotEmpty();
+        return $this->roles->whereIn('name', $roles)->isNotEmpty();
     }
     protected function casts(): array
     {

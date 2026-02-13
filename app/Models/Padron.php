@@ -11,7 +11,7 @@ class Padron extends Model
 
     protected $table = 'padrones';
 
-    protected $fillable = ['anio', 'id_claustro', 'id_facultad', 'id_sede', 'origen_archivo', 'importado_el'];
+    protected $fillable = ['anio', 'id_claustro', 'id_facultad', 'id_sede', 'origen_archivo', 'importado_por', 'importado_el'];
 
     public function claustro()
     {

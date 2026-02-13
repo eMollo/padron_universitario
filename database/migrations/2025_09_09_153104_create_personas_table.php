@@ -21,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Indices para acelerar busquedas
+            $table->index('dni');
             $table->index('apellido');
             $table->index('nombre');
         });

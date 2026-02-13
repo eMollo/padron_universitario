@@ -16,7 +16,10 @@ return new class extends Migration
             $table->foreignId('id_persona')->constrained('personas')->onDelete('cascade');
             $table->foreignId('id_padron')->constrained('padrones')->onDelete('cascade');
             $table->string('legajo')->nullable();
+            $table->text('motivo_baja')->nullable();
+            $table->foreignId('baja_realizada_por')->nullable()->constrained('users');
             $table->timestamps();
+            $table->softDeletes();
 
             //Una persona solo puede estar una vez en el mismo padrón
             $table->unique(['id_persona','id_padron'], 'inscripcion_unica');
@@ -25,7 +28,6 @@ return new class extends Migration
             $table->unique(['id_padron', 'legajo'], 'padron_legajo_unico');
 
             $table->index(['legajo']);
-            $table->index(['id_persona']);
         });
     }
 
