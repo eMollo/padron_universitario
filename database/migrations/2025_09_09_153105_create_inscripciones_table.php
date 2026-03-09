@@ -28,6 +28,10 @@ return new class extends Migration
             $table->unique(['id_padron', 'legajo'], 'padron_legajo_unico');
 
             $table->index(['legajo']);
+
+            $table->index('id_persona');
+            $table->index('id_padron');
+            $table->index(['id_persona', 'id_padron']);
         });
     }
 

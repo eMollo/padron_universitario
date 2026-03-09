@@ -7,12 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    public function up(): void
+    public function up()
     {
-        // Eliminar unique actual
-        DB::statement('DROP INDEX IF EXISTS inscripcion_unica');
+        DB::statement('ALTER TABLE inscripciones DROP CONSTRAINT IF EXISTS inscripcion_unica');
 
-        // Crear unique parcial
         DB::statement('
             CREATE UNIQUE INDEX inscripcion_unica_activa
             ON inscripciones (id_persona, id_padron)
@@ -20,13 +18,15 @@ return new class extends Migration
         ');
     }
 
-    public function down(): void
+    public function down()
     {
         DB::statement('DROP INDEX IF EXISTS inscripcion_unica_activa');
 
         DB::statement('
-            CREATE UNIQUE INDEX inscripcion_unica
-            ON inscripciones (id_persona, id_padron)
+            ALTER TABLE inscripciones
+            ADD CONSTRAINT inscripcion_unica
+            UNIQUE (id_persona, id_padron)
         ');
     }
+
 };

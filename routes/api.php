@@ -10,6 +10,8 @@ use App\Http\Controllers\PadronController;
 use App\Http\Controllers\PadronComparadorController;
 use App\Http\Controllers\ListaController;
 use App\Http\Controllers\PadronExportController;
+use App\Http\Controllers\PadronBusquedaController;
+use App\Http\Controllers\CatalogoController;
 
 use App\Http\Controllers\AvalController;
 use App\Http\Controllers\Api\AuthController;
@@ -26,18 +28,28 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('padrones/importar', [PadronController::class, 'importar']);
     Route::post('listas', [ListaController::class, 'store']);
     Route::post('/listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
+
+    #Route::post('/inscripciones/{id}/dar-baja', [InscripcionController::class, 'darBaja']);
+    Route::post('/inscripciones/{id}/restaurar', [InscripcionController::class, 'restaurar']);
+    Route::post('/padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);
+    Route::post('/padrones/baja-masiva', [PadronController::class, 'bajaMasiva']);
+    Route::post('/padrones/buscar', [PadronBusquedaController::class, 'buscar']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,consulta'])->group(function () {
-    Route::get('padrones/{id}/export', [PadronExportController::class, 'export']);
+    #Route::get('padrones/{id}/export', [PadronExportController::class, 'export']);
+    Route::post('/padrones/export-filtrado', [PadronExportController::class, 'exportFiltrado']);
+
 });
 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     // PERSONAS
+    Route::post('/personas/buscar', [PersonaController::class, 'buscar']);
+    Route::get('personas/{id}', [PersonaController::class, 'show'])->whereNumber('id');
     Route::get('personas', [PersonaController::class, 'index']);
-    Route::get('personas/{id}', [PersonaController::class, 'show']);
+    
     Route::post('personas', [PersonaController::class, 'store']);
     Route::put('personas/{id}', [PersonaController::class, 'update']);
     Route::delete('personas/{id}', [PersonaController::class, 'destroy']);
@@ -75,4 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     #Route::post('/listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
+    Route::get('/catalogos', [CatalogoController::class, 'index']);
+    Route::get('/padrones/resumen', [PadronController::class, 'resumen']);
+    Route::get('/padrones/{id}/personas', [PadronController::class, 'personas']);
     });

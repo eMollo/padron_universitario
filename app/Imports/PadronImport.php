@@ -24,56 +24,61 @@ class PadronImport implements ToCollection, WithHeadingRow
     public function collection(Collection $rows)
     {
         DB::transaction(function () use ($rows) {
-        $duplicados = [];
-        $vistos = [];
 
-        foreach ($rows as $row) {
-            if (empty($row['dni'])) {
-                continue;
+            $duplicados = [];
+            $vistos = [];
+
+            foreach ($rows as $row) {
+
+                if (empty($row['dni'])) {
+                    continue;
+                }
+
+                $dni = trim($row['dni']);
+                $legajo = $row['legajo'] ?? null;
+
+                $partes = explode(',', $row['apellido_y_nombre'] ?? '');
+                $apellido = trim($partes[0] ?? '');
+                $nombre = trim($partes[1] ?? '');
+
+                $persona = Persona::firstOrCreate(
+                    ['dni' => $dni],
+                    [
+                        'apellido' => $apellido,
+                        'nombre' => $nombre
+                    ]
+                );
+
+                $key = $persona->id . '-' . $this->id_padron;
+
+                if (
+                    isset($vistos[$key]) ||
+                    Inscripcion::where('id_persona', $persona->id)
+                        ->where('id_padron', $this->id_padron)
+                        ->exists()
+                ) {
+                    $duplicados[] = [
+                        'dni' => $persona->dni,
+                        'nombre' => "{$persona->apellido}, {$persona->nombre}",
+                        'motivo' => 'Persona duplicada en el mismo padrón'
+                    ];
+
+                    continue;
+                }
+
+                $vistos[$key] = true;
+
+                Inscripcion::create([
+                    'id_persona' => $persona->id,
+                    'id_padron' => $this->id_padron,
+                    'legajo' => $legajo,
+                ]);
             }
 
-            // Normalizar
-            $dni = trim($row['dni']);
-            $legajo = $row['legajo'] ?? null;
-
-            // Buscar o crear persona
-            $persona = Persona::firstOrCreate(
-                ['dni' => $dni],
-                [
-                    'apellido' => trim(explode(',', $row['apellido_y_nombre'])[0] ?? ''),
-                    'nombre'   => trim(explode(',', $row['apellido_y_nombre'])[1] ?? ''),
-                ]
-            );
-
-            // CLAVE: detectar duplicado en el MISMO PADRÓN
-            $key = $persona->id . '-' . $this->id_padron;
-
-            if (isset($vistos[$key]) ||
-                Inscripcion::where('id_persona', $persona->id)
-                    ->where('id_padron', $this->id_padron)
-                    ->exists()
-            ) {
-                $duplicados[] = [
-                    'dni' => $persona->dni,
-                    'nombre' => "{$persona->apellido}, {$persona->nombre}",
-                    'motivo' => 'Persona duplicada en el mismo padrón'
-                ];
-                continue;
+            if (!empty($duplicados)) {
+                throw new \RuntimeException(json_encode($duplicados));
             }
 
-            $vistos[$key] = true;
-
-            Inscripcion::create([
-                'id_persona' => $persona->id,
-                'id_padron'  => $this->id_padron,
-                'legajo'     => $legajo,
-            ]);
-        }
-
-        //  Si hubo duplicados → abortar TODO
-        if (!empty($duplicados)) {
-            throw new \RuntimeException(json_encode($duplicados));
-        }
-    });
+        });
     }
 }

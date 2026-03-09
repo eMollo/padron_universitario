@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Persona;
+use App\Services\PersonaBuscarService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class PersonaController extends Controller
 {
     // GET /api/personas
     public function index()
     {
-        return response()->json(Persona::all(), 200);
+        return response()->json(Persona::paginate(20), 200);
     }
 
     // GET /api/personas/{id}
@@ -78,4 +81,31 @@ class PersonaController extends Controller
         $personas = Persona::all();
         return view('personas.index', compact('personas'));
     }
+
+    public function buscar(Request $request)
+    {
+        $request->validate([
+            'dni' => 'nullable|numeric',
+            'apellido' => 'nullable|string',
+            'nombre' => 'nullable|string',
+            'anio' => 'nullable|integer',
+            'id_facultad' => 'nullable|integer',
+            'id_claustro' => 'nullable|integer',
+            'order_by' => 'nullable|string',
+            'order' => 'nullable|in:asc,desc',
+            'per_page' => 'nullable|integer|min:1|max:100'
+        ]);
+
+        $resultado = PersonaBuscarService::ejecutar($request);
+
+        if (empty($resultado['resultado']) || count($resultado['resultado']) === 0) {
+            return response()->json([
+                'mensaje' => 'No se encontraron personas'
+            ], 404);
+        }
+
+        return response()->json($resultado);
+    }
+
+
 }

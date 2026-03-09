@@ -7,10 +7,34 @@ use App\Models\Padron;
 use App\Models\Inscripcion;
 use App\Models\Persona;
 use Illuminate\Support\Facades\DB;
+use App\Services\PadronComparadorService;
+use App\Services\PersonaBuscarService;
 
 class PadronComparadorController extends Controller
 {
-    public function comparar(Request $request)
+
+    public function buscar(Request $request)
+    {
+        $resultado = PersonaBuscarService::ejecutar($request);
+
+        return response()->json($resultado);
+    }
+
+    public function comparar(Request $request, PadronComparadorService $service)
+    {
+        $data = $request->validate([
+            'anio' => 'required|integer',
+            'mode' => 'nullable|string',
+            'id_facultad' => 'nullable|integer',
+            'id_claustro' => 'nullable|integer',
+        ]);
+
+        return response()->json(
+            $service->comparar($data)
+        );
+    }
+
+    /*public function comparar(Request $request)
     {
         $request->validate([
             'anio' => 'required|integer',
@@ -148,5 +172,5 @@ class PadronComparadorController extends Controller
             'DUPLICADOS_EXACTOS' => $duplicadosExactos,
             'DUPLICADOS_POSIBLES' => $duplicadosPosibles
         ]);
-    }
+    }*/
 }

@@ -22,5 +22,17 @@ Route::get('/claustros', [ClaustroController::class, 'index']);
     'index', 'create', 'store', 'show', 'destroy'
 ]);*/
 
-Route::get('import', [UserImportController::class, 'index']);
-Route::post('import', [UserImportController::class, 'store'])->name('import');
+#Route::get('import', [UserImportController::class, 'index']);
+#Route::post('import', [UserImportController::class, 'store'])->name('import');
+
+Route::get('/login', function () {
+    return view('auth.login');
+})->name('login');
+
+Route::get('/', function () {
+    return view('dashboard.index');
+})->name('dashboard');
+
+Route::get('/padrones/importar', function () {
+    return view('padrones.importar');
+})->name('padrones.importar');

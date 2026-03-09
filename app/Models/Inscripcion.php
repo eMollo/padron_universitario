@@ -24,4 +24,9 @@ class Inscripcion extends Model
     {
         return $this->belongsTo(Padron::class, 'id_padron');
     }
+
+    public function usuarioBaja()
+    {
+        return $this->belongsTo(User::class, 'baja_realizada_por');
+    }
 }

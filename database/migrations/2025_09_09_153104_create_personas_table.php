@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('dni')->unique();
             $table->string('email')->nullable();
             $table->string('telefono')->nullable();
+            $table->string('dni_normalizado')->nullable()->index();
             $table->timestamps();
 
             // Indices para acelerar busquedas
