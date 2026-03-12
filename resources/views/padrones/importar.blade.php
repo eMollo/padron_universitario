@@ -1,78 +1,81 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Importar padrón</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="container py-4">
-  <h1>Importar padrón</h1>
+@extends('layouts.app')
 
-  @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
-  @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-  @endif
+@section('content')
 
-  <form action="{{ route('padrones.store') }}" method="POST" enctype="multipart/form-data" class="mb-4">
-    @csrf
+<h3>Importar padrón Excel</h3>
 
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <label class="form-label">Año</label>
-        <input type="number" name="anio" class="form-control" required value="{{ old('anio', date('Y')) }}">
-      </div>
+<div class="card mt-4">
 
-      <div class="col-md-3">
-        <label class="form-label">Facultad</label>
-        <select name="id_facultad" class="form-control" required>
-          <option value="">-- elegir --</option>
-          @foreach($facultades as $f)
-            <option value="{{ $f->id }}">{{ $f->nombre }}</option>
-          @endforeach
-        </select>
-      </div>
+<div class="card-body">
 
-      <div class="col-md-3">
-        <label class="form-label">Claustro</label>
-        <select name="id_claustro" class="form-control" required>
-          <option value="">-- elegir --</option>
-          @foreach($claustros as $c)
-            <option value="{{ $c->id }}">{{ $c->nombre }}</option>
-          @endforeach
-        </select>
-      </div>
+<form id="importForm">
 
-      <div class="col-md-3">
-        <label class="form-label">Sede (opcional)</label>
-        <select name="id_sede" class="form-control">
-          <option value="">-- ninguna --</option>
-          @foreach($sedes as $s)
-            <option value="{{ $s->id }}">{{ $s->nombre }}</option>
-          @endforeach
-        </select>
-      </div>
-    </div>
+<div class="mb-3">
 
-    <div class="mb-3">
-      <label class="form-label">Archivo Excel (.xlsx, .xls o .csv)</label>
-      <input type="file" name="archivo" accept=".xlsx,.xls,.csv" class="form-control" required>
-      <div class="form-text">El archivo debe tener columnas: "Apellido y Nombre" (o "apellido" y "nombre"), "dni", "legajo". Si trae "sede", la usaremos.</div>
-    </div>
+<label>Archivo Excel</label>
 
-    <button class="btn btn-primary">Subir e importar</button>
-    <a href="{{ route('padrones.index') }}" class="btn btn-secondary">Volver</a>
-  </form>
+<input
+type="file"
+class="form-control"
+id="archivo"
+required
+>
 
-  <hr>
-  <p>Ejemplo de formato esperado en la primera fila del Excel (cabeceras):</p>
-  <pre>
-Apellido y Nombre , dni , legajo , sede
-Pérez, Juan       , 12345678 , AA2222 , Neuquén
-Gómez, María      , 23456789 , BB3344 , Cipolletti
-  </pre>
+</div>
 
-</body>
-</html>
+<button class="btn btn-success">
+Subir padrón
+</button>
+
+</form>
+
+<hr>
+
+<div id="resultado"></div>
+
+</div>
+
+</div>
+
+<script>
+
+document.getElementById("importForm").addEventListener("submit", async function(e){
+
+e.preventDefault()
+
+const file = document.getElementById("archivo").files[0]
+
+if(!file){
+
+alert("Seleccione un archivo")
+
+return
+
+}
+
+const formData = new FormData()
+
+formData.append("archivo", file)
+
+const response = await fetch("/api/padrones/importar",{
+
+method:"POST",
+
+headers:{
+"Authorization":"Bearer "+localStorage.getItem("token")
+},
+
+body:formData
+
+})
+
+const data = await response.json()
+
+document.getElementById("resultado").innerHTML =
+"<div class='alert alert-info mt-3'>"+data.message+"</div>"
+
+})
+
+</script>
+
+@endsection
