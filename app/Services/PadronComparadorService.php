@@ -48,7 +48,8 @@ class PadronComparadorService
     $sub = DB::table('personas as p')
         ->join('inscripciones as i', 'i.id_persona', '=', 'p.id')
         ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
-        ->where('pad.anio', $anio);
+        ->where('pad.anio', $anio)
+        ->whereNull('i.deleted_at'); // solo inscripciones activas
 
     $this->aplicarMode($sub, $mode, $filters);
 
@@ -92,7 +93,8 @@ class PadronComparadorService
         ->join('facultad as f', 'f.id', '=', 'pad.id_facultad')
         ->join('claustros as c', 'c.id', '=', 'pad.id_claustro')
         ->where('pad.anio', $anio)
-        ->whereIn('p.dni_normalizado', $dniDuplicados);
+        ->whereIn('p.dni_normalizado', $dniDuplicados)
+        ->whereNull('i.deleted_at'); // solo inscripciones activas
 
     $this->aplicarMode($query, $mode, $filters);
 
@@ -126,7 +128,8 @@ class PadronComparadorService
     $base = DB::table('personas as p')
         ->join('inscripciones as i', 'i.id_persona', '=', 'p.id')
         ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
-        ->where('pad.anio', $anio);
+        ->where('pad.anio', $anio)
+        ->whereNull('i.deleted_at'); // solo inscripciones activas
 
     $this->aplicarMode($base, $mode, $filters);
 
@@ -158,7 +161,8 @@ class PadronComparadorService
             $join->on(DB::raw('LOWER(TRIM(p.apellido))'), '=', 'dup.apellido_norm')
                  ->on(DB::raw('LOWER(TRIM(p.nombre))'), '=', 'dup.nombre_norm');
         })
-        ->where('pad.anio', $anio);
+        ->where('pad.anio', $anio)
+        ->whereNull('i.deleted_at'); // solo inscripciones activas
 
     $this->aplicarMode($query, $mode, $filters);
 

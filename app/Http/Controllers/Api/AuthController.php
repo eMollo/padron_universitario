@@ -6,49 +6,45 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\RoleMiddleware;
+use Illuminate\Support\Facades\Auth;
+
 
 class AuthController extends Controller
 {
     public function login(Request $request)
-    {
-        $request->validate([
-            'user'     => 'required|string',
-            'password' => 'required|string',
-        ]);
+{
+    $credentials = $request->validate([
+        'user'     => 'required|string',
+        'password' => 'required|string',
+    ]);
 
-        $user = User::where('user', $request->user)->first();
-
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Credenciales inválidas'
-            ], 401);
-        }
-
-        if (!$user->is_active) {
-            return response()->json([
-                'message' => 'Usuario inactivo'
-            ], 403);
-        }
-
-        $token = $user->createToken('api-token')->plainTextToken;
-
+    if (!Auth::attempt([
+        'user' => $credentials['user'],
+        'password' => $credentials['password'],
+        'is_active' => 1
+    ])) {
         return response()->json([
-            'token' => $token,
-            'user'  => [
-                'id'   => $user->id,
-                'name' => $user->name,
-                'user' => $user->user,
-                'roles' => $user->roles->pluck('name')->values(),
-            ]
-        ]);
+            'message' => 'Credenciales inválidas'
+        ], 401);
     }
+
+    $request->session()->regenerate();
+
+    return response()->json([
+        'success' => true,
+        'user' => auth()->user()->only('id','name','user')
+    ]);
+}
 
     public function logout(Request $request)
-    {
-        $request->user()->currentAccessToken()->delete();
+{
+    Auth::logout();
 
-        return response()->json([
-            'message' => 'Sesión cerrada'
-        ]);
-    }
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return response()->json(['success' => true]);
+}
 }

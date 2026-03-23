@@ -1,10 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 <title>Elecciones UNCO - Login</title>
 
@@ -91,21 +94,33 @@ const user = document.getElementById("user").value
 const password = document.getElementById("password").value
 
 try {
-
-const response = await fetch("/api/login",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json",
-"Accept":"application/json"
-},
-
-body:JSON.stringify({
-user: user,
-password: password
+// 1. Pedir cookie CSRF
+await fetch('/sanctum/csrf-cookie', {
+    credentials: 'include'
 })
 
+// 2. Leer token desde cookie
+function getCookie(name) {
+    return document.cookie
+        .split('; ')
+        .find(row => row.startsWith(name + '='))
+        ?.split('=')[1]
+}
+
+const xsrfToken = decodeURIComponent(getCookie('XSRF-TOKEN'))
+
+// 3. Login
+const response = await fetch("/login", {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': xsrfToken
+    },
+    body: JSON.stringify({
+        user: user,
+        password: password
+    })
 })
 
 if(!response.ok){
@@ -122,9 +137,9 @@ return
 
 const data = await response.json()
 
-if(data.token){
+if(data.success){
 
-localStorage.setItem("token", data.token)
+//localStorage.setItem("token", data.token)
 localStorage.setItem("user", JSON.stringify(data.user))
 
 window.location="/"

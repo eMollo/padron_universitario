@@ -34,143 +34,62 @@ class PadronComparadorController extends Controller
         );
     }
 
-    /*public function comparar(Request $request)
+    public function bajaInscripcion(Request $request)
     {
-        $request->validate([
-            'anio' => 'required|integer',
-            'id_claustro' => 'nullable|integer',
-            'id_facultad' => 'nullable|integer',
-            'mode' => 'nullable|string' // nuevo
+        $data = $request->validate([
+            'inscripcion_id' => 'required|integer',
+            'motivo' => 'nullable|string|max:255'
         ]);
 
+        $inscripcion = Inscripcion::findOrFail($data['inscripcion_id']);
 
-        // Construcción dinámica del query de padrones
-
-
-        $query = Padron::with(['facultad', 'claustro'])
-            ->where('anio', $request->anio);
-
-        // Modos posibles:
-        // - mismo_claustro_global
-        // - misma_facultad_entre_claustros
-        // - facultad_vs_resto
-        // - default (todos contra todos)
-
-        if ($request->mode === 'mismo_claustro_global' && $request->id_claustro) {
-            $query->where('id_claustro', $request->id_claustro);
-        }
-
-        if ($request->mode === 'misma_facultad_entre_claustros' && $request->id_facultad) {
-            $query->where('id_facultad', $request->id_facultad);
-        }
-
-        if ($request->mode === 'facultad_vs_resto' && $request->id_facultad) {
-            // Trae todos, pero luego el frontend puede diferenciar
-            // (no filtramos acá porque justamente queremos comparar contra todos)
-        }
-
-        // Si no hay mode → todos contra todos del año
-
-        $padrones = $query->get();
-
-        if ($padrones->isEmpty()) {
+        if ($inscripcion->deleted_at) {
             return response()->json([
-                'mensaje' => 'No se encontraron padrones para los filtros indicados'
-            ], 404);
+                'error' => 'La inscripción ya estaba dada de baja'
+            ], 400);
         }
 
+        $inscripcion->motivo_baja = $data['motivo'] ?? 'Duplicado de padrón';
+        $inscripcion->baja_realizada_por = auth()->id();
+        $inscripcion->save();
 
-        // Obtener inscripciones activas (ignorar soft deletes)
+        $inscripcion->delete(); // soft delete
 
-        $inscripciones = Inscripcion::with([
-                'persona',
-                'padron.facultad',
-                'padron.claustro'
-            ])
-            ->whereIn('id_padron', $padrones->pluck('id'))
-            ->whereNull('deleted_at')
-            ->get();
-
-        if ($inscripciones->isEmpty()) {
-            return response()->json([
-                'mensaje' => 'No hay inscripciones para comparar'
-            ], 404);
-        }
-
-
-        // Duplicados exactos (por DNI)
-
-
-        $duplicadosExactos = $inscripciones
-            ->groupBy('persona.dni')
-            ->filter(fn ($grupo) => $grupo->count() > 1)
-            ->map(function ($grupo, $dni) {
-
-                $persona = $grupo->first()->persona;
-
-                return [
-                    'dni' => $dni,
-                    'nombre' => "{$persona->apellido}, {$persona->nombre}",
-                    'cantidad' => $grupo->count(),
-                    'ocurrencias' => $grupo->map(fn ($i) => [
-                        'inscripcion_id' => $i->id, // importante para eliminar
-                        'padron_id' => $i->id_padron,
-                        'facultad' => $i->padron->facultad->nombre ?? '',
-                        'claustro' => $i->padron->claustro->nombre ?? '',
-                        'legajo' => $i->legajo
-                    ])->values()
-                ];
-            })
-            ->values();
-
-
-        // Duplicados posibles (mismo nombre/apellido, distinto DNI)
-
-
-        $porNombre = $inscripciones->groupBy(function ($i) {
-            return mb_strtolower(
-                trim("{$i->persona->apellido}, {$i->persona->nombre}")
-            );
-        });
-
-        $duplicadosPosibles = collect();
-
-        foreach ($porNombre as $nombreCompleto => $grupo) {
-
-            $dnis = $grupo->pluck('persona.dni')->unique();
-
-            if ($dnis->count() > 1) {
-
-                $duplicadosPosibles->push([
-                    'nombre' => $nombreCompleto,
-                    'dnis' => $dnis->values(),
-                    'cantidad' => $grupo->count(),
-                    'ocurrencias' => $grupo->map(fn ($i) => [
-                        'inscripcion_id' => $i->id,
-                        'dni' => $i->persona->dni,
-                        'padron_id' => $i->id_padron,
-                        'facultad' => $i->padron->facultad->nombre ?? '',
-                        'claustro' => $i->padron->claustro->nombre ?? '',
-                        'legajo' => $i->legajo
-                    ])->values()
-                ]);
-            }
-        }
-
-
-        //Respuesta final
-   
         return response()->json([
-            'filtros_aplicados' => [
-                'anio' => $request->anio,
-                'id_claustro' => $request->id_claustro,
-                'id_facultad' => $request->id_facultad,
-                'mode' => $request->mode ?? 'todos_contra_todos'
-            ],
-            'padrones_analizados' => $padrones->count(),
-            'inscripciones_analizadas' => $inscripciones->count(),
-            'DUPLICADOS_EXACTOS' => $duplicadosExactos,
-            'DUPLICADOS_POSIBLES' => $duplicadosPosibles
+            'success' => true
         ]);
-    }*/
+    }
+
+    public function bajas(Request $request)
+    {
+        $anio = $request->query('anio');
+
+        $query = DB::table('inscripciones as i')
+            ->join('personas as p', 'p.id', '=', 'i.id_persona')
+            ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
+            ->join('facultad as f', 'f.id', '=', 'pad.id_facultad')
+            ->join('claustros as c', 'c.id', '=', 'pad.id_claustro')
+            ->leftJoin('users as u', 'u.id', '=', 'i.baja_realizada_por')
+            ->whereNotNull('i.deleted_at');
+
+        if ($anio) {
+            $query->where('pad.anio', $anio);
+        }
+
+        return $query
+            ->select(
+                'i.id as inscripcion_id',
+                'p.dni',
+                'p.apellido',
+                'p.nombre',
+                'f.sigla as facultad',
+                'c.nombre as claustro',
+                'i.motivo_baja',
+                'u.name as usuario_baja',
+                'i.deleted_at'
+            )
+            ->orderByDesc('i.deleted_at')
+            ->get();
+    }
+
 }

@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PersonaController;
+/*use App\Http\Controllers\PersonaController;
 use App\Http\Controllers\ClaustroController;
 use App\Http\Controllers\FacultadController;
 use App\Http\Controllers\SedeController;
@@ -17,11 +17,11 @@ use App\Http\Controllers\AvalController;
 use App\Http\Controllers\Api\AuthController;
 
 
-Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
-    Route::get('/padrones', [PadronController::class, 'index']);
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    //Route::get('/padrones', [PadronController::class, 'index']);
 
     Route::delete('inscripciones/{id}', [InscripcionController::class, 'destroy']);
     Route::delete('padrones/{id}', [PadronController::class, 'destroy']);
@@ -34,17 +34,26 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);
     Route::post('/padrones/baja-masiva', [PadronController::class, 'bajaMasiva']);
     Route::post('/padrones/buscar', [PadronBusquedaController::class, 'buscar']);
+
+    //Agregado hoy
+    
+
+    Route::post('/comparador/buscar', [PadronComparadorController::class, 'buscar']);
+
+    Route::post('/comparador/comparar', [PadronComparadorController::class, 'comparar']);
+
+    Route::post('/comparador/baja-inscripcion', [PadronComparadorController::class, 'bajaInscripcion']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,consulta'])->group(function () {
+Route::middleware(['auth', 'role:admin,consulta'])->group(function () {
     #Route::get('padrones/{id}/export', [PadronExportController::class, 'export']);
     Route::post('/padrones/export-filtrado', [PadronExportController::class, 'exportFiltrado']);
 
 });
 
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
+Route::middleware('auth')->group(function () {
+    #Route::post('/logout', [AuthController::class, 'logout']);
     // PERSONAS
     Route::post('/personas/buscar', [PersonaController::class, 'buscar']);
     Route::get('personas/{id}', [PersonaController::class, 'show'])->whereNumber('id');
@@ -62,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // SEDES
     Route::get('sede', [SedeController::class, 'index']);
+    Route::get('/sede/facultad/{id}', [SedeController::class,'porFacultad']);
 
     // INSCRIPCIONES
     Route::get('inscripciones', [InscripcionController::class, 'index']);
@@ -90,4 +100,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/catalogos', [CatalogoController::class, 'index']);
     Route::get('/padrones/resumen', [PadronController::class, 'resumen']);
     Route::get('/padrones/{id}/personas', [PadronController::class, 'personas']);
-    });
+    });*/
