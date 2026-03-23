@@ -45,6 +45,7 @@ Salir
 
 <!-- Sidebar -->
 
+
 <div class="col-md-2 bg-light vh-100 pt-3">
 
 <ul class="nav flex-column">
@@ -53,15 +54,17 @@ Salir
 <a class="nav-link" href="/">Dashboard</a>
 </li>
 
-<li class="nav-item">
-<a class="nav-link" href="/padrones/importar">Importar Padrones</a>
-</li>
+
 
 <li class="nav-item">
 <a class="nav-link" href="/padrones">Ver Padrones</a>
 </li>
 
-@if(auth()->user()->role === 'admin')
+@if(auth()->user()?->hasRole('admin'))
+
+    <li class="nav-item">
+    <a class="nav-link" href="/padrones/importar">Importar Padrones</a>
+    </li>
     <li class="nav-item">
         <a href="/admin/comparador" class="nav-link">
             Comparador

@@ -16,7 +16,7 @@
 </div>
 
 <div class="col-md-3 mb-3">
-<label>Facultad</label>
+<label>Unidad Electoral</label>
 <select id="facultad" class="form-control" required></select>
 </div>
 

@@ -38,8 +38,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/', fn() => view('dashboard.index'));
 
-    Route::get('/padrones/importar', fn() => view('padrones.importar'))
-        ->middleware('role:admin');
+    //Route::get('/padrones/importar', fn() => view('padrones.importar'))
+       // ->middleware('role:admin');
 
     Route::get('/padrones', fn() => view('padrones.index'));
 
@@ -51,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
 
+        Route::get('/padrones/importar', fn() => view('padrones.importar'));
         Route::get('/admin/comparador', fn() => view('admin.padron-comparador'));
         Route::get('/admin/comparador/bajas', fn() => view('admin.padron-bajas'));
 

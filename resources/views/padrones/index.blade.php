@@ -29,7 +29,7 @@ Filtrar
 <tr>
 
 <th>Año</th>
-<th>Facultad</th>
+<th>Unidad Electoral</th>
 <th>Claustro</th>
 <th>Sede</th>
 <th>Personas</th>

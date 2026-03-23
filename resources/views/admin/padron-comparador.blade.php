@@ -54,7 +54,7 @@ Comparar
 <th>DNI</th>
 <th>Apellido</th>
 <th>Nombre</th>
-<th>Facultad</th>
+<th>Unidad Electoral</th>
 <th>Claustro</th>
 <th>Acción</th>
 </tr>
@@ -75,7 +75,7 @@ Comparar
 <th>DNI</th>
 <th>Apellido</th>
 <th>Nombre</th>
-<th>Facultad</th>
+<th>Unidad Electoral</th>
 <th>Claustro</th>
 <th>Acción</th>
 </tr>
