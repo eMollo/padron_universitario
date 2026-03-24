@@ -43,6 +43,8 @@ Salir
 
 <div class="row">
 
+
+
 <!-- Sidebar -->
 
 
@@ -50,11 +52,24 @@ Salir
 
 <ul class="nav flex-column">
 
+<div class="text-center mb-4">
+
+    <img src="{{ asset('images/isologotipo-unco-azul.png') }}" 
+         alt="Universidad"
+         style="max-width: 120px;" 
+         class="mb-2">
+
+</div>
+
 <li class="nav-item">
 <a class="nav-link" href="/">Dashboard</a>
 </li>
 
-
+<li class="nav-item">
+    <a href="/personas/buscar" class="nav-link">
+        Buscar Persona
+    </a>
+</li>
 
 <li class="nav-item">
 <a class="nav-link" href="/padrones">Ver Padrones</a>

@@ -15,6 +15,8 @@ use App\Http\Controllers\PadronExportController;
 use App\Http\Controllers\PadronBusquedaController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\AvalController;
+use App\Http\Controllers\PadronMetricasController;
+use App\Services\PadronResumenService;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,6 +49,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/admin/comparador', fn() => view('admin.padron-comparador'))
         ->middleware('role:admin');
+
+    Route::get('/personas/buscar', fn() => view('personas.buscar'));
+
+    Route::get('/api/metricas', [PadronMetricasController::class, 'index']);
+    Route::get('/padrones/metricas', fn() => view('padrones.metricas'));
+    Route::post('/api/metricas/recalcular', [PadronMetricasController::class, 'recalcular']);
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -92,6 +100,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::post('comparador/baja-inscripcion', [PadronComparadorController::class, 'bajaInscripcion']);
 
         Route::get('comparador/bajas', [PadronComparadorController::class, 'bajas']);
+
+        Route::post('comparador/export-bajas', [PadronExportController::class, 'exportBajas']);
         
 
     });
@@ -103,6 +113,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     */
     Route::middleware(['role:admin,consulta'])->group(function () {
         Route::post('padrones/export-filtrado', [PadronExportController::class, 'exportFiltrado']);
+        Route::post('comparador/export', [PadronExportController::class, 'exportComparador']);
+        Route::get('padrones/{id}/export', [PadronExportController::class, 'export']);
     });
 
     /*

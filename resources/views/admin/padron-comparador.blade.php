@@ -38,11 +38,14 @@ Comparar
 </button>
 </div>
 
-</div>
-
-</div>
 
 <div id="meta" class="mb-3"></div>
+
+<div class="col-md-2">
+<button onclick="exportarComparador()" class="btn btn-success">
+    Exportar Excel
+</button>
+</div>
 
 <h4>Duplicados exactos (DNI)</h4>
 
@@ -111,6 +114,44 @@ async function buscarDuplicados()
     document.getElementById('meta').innerHTML =
     `Exactos: ${json.meta.total_exactos} |
      Posibles: ${json.meta.total_posibles}`
+}
+
+async function exportarComparador()
+{
+    const btn = event.target
+    btn.disabled = true
+    btn.innerText = 'Exportando...'
+
+    try {
+        const data = {
+            anio: document.getElementById('anio').value,
+            mode: document.getElementById('mode').value,
+            id_facultad: document.getElementById('id_facultad').value,
+            id_claustro: document.getElementById('id_claustro').value
+        }
+
+        const res = await fetch('/api/comparador/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(data)
+        })
+
+        const blob = await res.blob()
+
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `comparador_${data.anio}.xlsx`
+        a.click()
+        window.URL.revokeObjectURL(url)
+
+    } finally {
+        btn.disabled = false
+        btn.innerText = 'Exportar Excel'
+    }
 }
 
 function renderExactos(grupos)

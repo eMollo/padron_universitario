@@ -90,6 +90,11 @@ html+=`
 <a class="btn btn-sm btn-primary" href="/padrones/${p.id}/personas">
 Ver
 </a>
+
+<a class="btn btn-sm btn-success"
+   href="/api/padrones/${p.id}/export">
+Exportar
+</a>
 </td>
 </tr>
 
