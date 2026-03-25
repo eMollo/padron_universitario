@@ -33,6 +33,7 @@
                 <th>Apellido</th>
                 <th>Nombre</th>
                 <th>Unidad Electoral</th>
+                <th>Claustro</th>
                 <th>Motivo</th>
                 <th>Acción</th>
             </tr>
@@ -69,6 +70,7 @@ async function cargarBajas()
             <td>${inscripcion.apellido ?? ''}</td>
             <td>${inscripcion.nombre ?? ''}</td>
             <td>${inscripcion.facultad ?? ''}</td>
+            <td>${inscripcion.claustro ?? ''}</td>
             <td>${inscripcion.motivo_baja ?? ''}</td>
             <td>
                 <button class="btn btn-success btn-sm"
