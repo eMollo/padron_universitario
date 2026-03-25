@@ -25,7 +25,7 @@
         </div>
 
         <div class="col-md-2">
-            <button class="btn btn-primary w-100" onclick="buscar()">
+            <button class="btn btn-primary w-100" onclick="nuevaBusqueda()">
                 Buscar
             </button>
         </div>
@@ -38,8 +38,17 @@
 
 <script>
 
-async function buscar()
+let paginaActual = 1
+
+function nuevaBusqueda()
 {
+    buscar(1)
+}
+
+async function buscar(page = 1)
+{
+    paginaActual = page
+
     const data = {
         dni: document.getElementById('dni').value,
         apellido: document.getElementById('apellido').value,
@@ -50,7 +59,7 @@ async function buscar()
     let res
 
     try {
-        res = await apiFetch('/api/personas/buscar', {
+        res = await apiFetch('/api/personas/buscar?page=' + page, {
             method: 'POST',
             headers: { 'Content-Type':'application/json' },
             body: JSON.stringify(data)
@@ -61,11 +70,20 @@ async function buscar()
         return
     }
 
-    renderResultados(res.resultado)
+    renderResultados(res)
 }
 
-function renderResultados(personas)
+function renderResultados(res)
 {
+    const personas = res.resultado
+    const meta = res.meta
+
+    if (!personas || personas.length === 0) {
+        document.getElementById('resultados').innerHTML =
+            `<div class="alert alert-warning">Sin resultados</div>`
+        return
+    }
+
     let html = `
         <table class="table table-bordered table-sm">
             <thead>
@@ -108,10 +126,44 @@ function renderResultados(personas)
         })
     })
 
+    html += `</tbody></table>`
+
+    //  PAGINACIÓN
     html += `
-            </tbody>
-        </table>
+        <div class="d-flex justify-content-between align-items-center mt-3">
     `
+
+    // anterior
+    if (meta.pagina_actual > 1) {
+        html += `
+            <button class="btn btn-outline-primary"
+                onclick="buscar(${meta.pagina_actual - 1})">
+                ← Anterior
+            </button>
+        `
+    } else {
+        html += `<div></div>`
+    }
+
+    // info
+    html += `
+        <span>
+            Página ${meta.pagina_actual} de ${meta.ultima_pagina}
+            (Total: ${meta.total})
+        </span>
+    `
+
+    // siguiente
+    if (meta.pagina_actual < meta.ultima_pagina) {
+        html += `
+            <button class="btn btn-outline-primary"
+                onclick="buscar(${meta.pagina_actual + 1})">
+                Siguiente →
+            </button>
+        `
+    }
+
+    html += `</div>`
 
     document.getElementById('resultados').innerHTML = html
 }
