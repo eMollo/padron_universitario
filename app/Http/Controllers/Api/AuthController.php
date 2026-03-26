@@ -14,37 +14,37 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     public function login(Request $request)
-{
-    $credentials = $request->validate([
-        'user'     => 'required|string',
-        'password' => 'required|string',
-    ]);
+    {
+        $credentials = $request->validate([
+            'user'     => 'required|string',
+            'password' => 'required|string',
+        ]);
 
-    if (!Auth::attempt([
-        'user' => $credentials['user'],
-        'password' => $credentials['password'],
-        'is_active' => 1
-    ])) {
+        if (!Auth::attempt([
+            'user' => $credentials['user'],
+            'password' => $credentials['password'],
+            'is_active' => 1
+        ])) {
+            return response()->json([
+                'message' => 'Credenciales inválidas'
+            ], 401);
+        }
+
+        $request->session()->regenerate();
+
         return response()->json([
-            'message' => 'Credenciales inválidas'
-        ], 401);
+            'success' => true,
+            'user' => auth()->user()->only('id','name','user')
+        ]);
     }
 
-    $request->session()->regenerate();
-
-    return response()->json([
-        'success' => true,
-        'user' => auth()->user()->only('id','name','user')
-    ]);
-}
-
     public function logout(Request $request)
-{
-    Auth::logout();
+    {
+        Auth::logout();
 
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-    return response()->json(['success' => true]);
-}
+        return response()->json(['success' => true]);
+    }
 }

@@ -39,11 +39,38 @@
 <script>
 
 let paginaActual = 1
+let orderBy = 'apellido'
+let orderDir = 'asc'
+let perPage = 15
+let debounceTimer = null
+
+
+// EVENTOS INPUT (DEBOUNCE)
+
+
+document.querySelectorAll('#dni, #apellido, #nombre, #anio')
+    .forEach(input => {
+        input.addEventListener('input', () => {
+            clearTimeout(debounceTimer)
+
+            debounceTimer = setTimeout(() => {
+                nuevaBusqueda()
+            }, 400)
+        })
+    })
+
+
+// NUEVA BUSQUEDA
+
 
 function nuevaBusqueda()
 {
     buscar(1)
 }
+
+
+// BUSCAR
+
 
 async function buscar(page = 1)
 {
@@ -53,7 +80,10 @@ async function buscar(page = 1)
         dni: document.getElementById('dni').value,
         apellido: document.getElementById('apellido').value,
         nombre: document.getElementById('nombre').value,
-        anio: document.getElementById('anio').value
+        anio: document.getElementById('anio').value,
+        order_by: orderBy,
+        order: orderDir,
+        per_page: perPage
     }
 
     let res
@@ -73,6 +103,35 @@ async function buscar(page = 1)
     renderResultados(res)
 }
 
+
+// ORDENAR
+
+
+function ordenar(campo)
+{
+    if (orderBy === campo) {
+        orderDir = orderDir === 'asc' ? 'desc' : 'asc'
+    } else {
+        orderBy = campo
+        orderDir = 'asc'
+    }
+
+    buscar(1)
+}
+
+// ICONO ORDEN
+
+
+function iconoOrden(campo)
+{
+    if (orderBy !== campo) return ''
+    return orderDir === 'asc' ? '↑' : '↓'
+}
+
+// =======================
+// RENDER
+// =======================
+
 function renderResultados(res)
 {
     const personas = res.resultado
@@ -85,11 +144,34 @@ function renderResultados(res)
     }
 
     let html = `
+
+        <div class="d-flex justify-content-between mb-2">
+
+            <div>
+                <strong>Total:</strong> ${meta.total}
+            </div>
+
+            <div>
+                <select class="form-select form-select-sm"
+                    onchange="cambiarPerPage(this.value)">
+                    <option value="15" ${perPage==15?'selected':''}>15</option>
+                    <option value="30" ${perPage==30?'selected':''}>30</option>
+                    <option value="50" ${perPage==50?'selected':''}>50</option>
+                    <option value="100" ${perPage==100?'selected':''}>100</option>
+                </select>
+            </div>
+
+        </div>
+
         <table class="table table-bordered table-sm">
             <thead>
                 <tr>
-                    <th>Apellido y Nombre</th>
-                    <th>DNI</th>
+                    <th onclick="ordenar('apellido')" style="cursor:pointer">
+                        Apellido y Nombre ${iconoOrden('apellido')}
+                    </th>
+                    <th onclick="ordenar('dni')" style="cursor:pointer">
+                        DNI ${iconoOrden('dni')}
+                    </th>
                     <th>Año</th>
                     <th>Facultad</th>
                     <th>Claustro</th>
@@ -128,12 +210,11 @@ function renderResultados(res)
 
     html += `</tbody></table>`
 
-    //  PAGINACIÓN
+    // PAGINACIÓN
     html += `
         <div class="d-flex justify-content-between align-items-center mt-3">
     `
 
-    // anterior
     if (meta.pagina_actual > 1) {
         html += `
             <button class="btn btn-outline-primary"
@@ -145,15 +226,12 @@ function renderResultados(res)
         html += `<div></div>`
     }
 
-    // info
     html += `
         <span>
             Página ${meta.pagina_actual} de ${meta.ultima_pagina}
-            (Total: ${meta.total})
         </span>
     `
 
-    // siguiente
     if (meta.pagina_actual < meta.ultima_pagina) {
         html += `
             <button class="btn btn-outline-primary"
@@ -166,6 +244,16 @@ function renderResultados(res)
     html += `</div>`
 
     document.getElementById('resultados').innerHTML = html
+}
+
+// =======================
+// PER PAGE
+// =======================
+
+function cambiarPerPage(valor)
+{
+    perPage = parseInt(valor)
+    buscar(1)
 }
 
 </script>
