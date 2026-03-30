@@ -135,7 +135,7 @@ class ListaValidationService
 
         if (!empty($payload['apoderado']['dni'])) {
 
-            $apo = Persona::where('dni', $payload['apoderado']['dni'])->first();
+            $apo = Persona::where('dni', $payload['apoderado']['dni'])->first();               //ESTO PUEDE CAMBIAR, SI NO EXISTE LA PERSONA SE CREA
 
             if (!$apo) {
                 $errors['apoderado'][] = [
@@ -149,7 +149,7 @@ class ListaValidationService
                     'nombre' => "{$apo->apellido}, {$apo->nombre}",
                 ];
             }
-        }
+        }                                                                                       //HASTA ACÁ
 
         $result = $this->validarPostulantes(
         $payload['postulantes'],
@@ -177,7 +177,7 @@ class ListaValidationService
     *
     * Reglas:
     * - DNI siempre obligatorio
-    * - Legajo obligatorio solo para superior y directivo
+    * - Legajo obligatorio solo para superior (salvo graduados) y directivo
     * - Apellido y nombre se ignoran (solo frontend)
     * - Si un postulante es inválido → falla toda la lista
     *
