@@ -26,6 +26,7 @@ class SedeSeeder extends Seeder
             ['nombre' => 'Sierra Grande (Complejo Universitario Regional Zona Atlántica y Sur)', 'id_facultad' => 3],
             ['nombre' => 'Conesa (Complejo Universitario Regional Zona Atlántica y Sur)', 'id_facultad' => 3],
             ['nombre' => 'San Antonio Oeste - Las Grutas (Complejo Universitario Regional Zona Atlántica y Sur)', 'id_facultad' => 3],
+            ['nombre' => 'Rio Colorado (Complejo Universitario Regional Zona Atlántica y Sur)', 'id_facultad' => 3], //Agregado recientemente
             ['nombre' => 'San Antonio Oeste (Facultad de Ciencias Marinas)', 'id_facultad' => 4],
             ['nombre' => 'Cipolletti (Facultad de Ciencias Médicas)', 'id_facultad' => 5],
             ['nombre' => 'Neuquén (Facultad de Ciencias del Ambiente y la Salud)', 'id_facultad' => 6],
