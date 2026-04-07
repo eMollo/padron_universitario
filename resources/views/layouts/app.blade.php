@@ -43,15 +43,10 @@ Salir
 
 <div class="row">
 
-
-
 <!-- Sidebar -->
-
-
 <div class="col-md-2 bg-light vh-100 pt-3">
 
 <ul class="nav flex-column">
-
 
 <li class="nav-item">
 <a class="nav-link" href="/">Dashboard</a>
@@ -72,6 +67,7 @@ Salir
     <li class="nav-item">
     <a class="nav-link" href="/padrones/importar">Importar Padrones</a>
     </li>
+
     <li class="nav-item">
         <a href="/admin/comparador" class="nav-link">
             Comparador
@@ -83,6 +79,7 @@ Salir
             Inscripciones dadas de baja
         </a>
     </li>
+
 @endif
 
 </ul>
@@ -90,18 +87,15 @@ Salir
 </div>
 
 <!-- Contenido -->
-
 <div class="col-md-10 pt-4">
-
 @yield('content')
-
 </div>
 
 </div>
 
 </div>
 
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

@@ -40,6 +40,11 @@ return new class extends Migration
             $table->index('dni', 'idx_personas_dni');
         });
 
+         // DNI NORMALIZADO (IMPORTANTE)
+        Schema::table('personas', function (Blueprint $table) {
+            $table->index('dni_normalizado', 'idx_personas_dni_normalizado');
+        });
+
         // índice para búsquedas por apellido
         Schema::table('personas', function (Blueprint $table) {
             $table->index('apellido', 'idx_personas_apellido');
@@ -78,12 +83,7 @@ return new class extends Migration
 
         });
 
-        // índice parcial para activos
-        DB::statement("
-            CREATE INDEX idx_inscripciones_activas
-            ON inscripciones(id_padron)
-            WHERE deleted_at IS NULL
-        ");
+        
 
     }
 
@@ -107,6 +107,7 @@ return new class extends Migration
         
         Schema::table('personas', function (Blueprint $table) {
             $table->dropIndex('idx_personas_dni');
+            $table->dropIndex('idx_personas_dni_normalizado');
             $table->dropIndex('idx_personas_apellido');
         });
 

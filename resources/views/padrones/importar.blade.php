@@ -2,8 +2,6 @@
 
 @section('content')
 
-
-
 <h3>Importar padrón</h3>
 
 <form id="formImportar">
@@ -27,7 +25,7 @@
 
 <div class="col-md-3 mb-3" id="grupoSede">
 <label>Sede</label>
-<select id="sede" class="form-control"></select>
+<select id="sede" class="form-control" required></select>
 </div>
 
 <div class="col-md-6 mb-3">
@@ -48,19 +46,10 @@ Importar padrón
 const facultad = document.getElementById("facultad")
 const claustro = document.getElementById("claustro")
 const sede = document.getElementById("sede")
-const grupoSede = document.getElementById("grupoSede")
 
 let claustros = []
 
 async function cargarCatalogos(){
-
-    /*const facultadesReq = await fetch("/api/facultad", {
-        credentials: 'include'
-    })
-
-    const claustrosReq = await fetch("/api/claustros", {
-        credentials: 'include'
-    })*/
 
     const f = await apiFetch("/api/facultad")
     const c = await apiFetch("/api/claustros")
@@ -78,7 +67,6 @@ async function cargarCatalogos(){
     c.forEach(x=>{
         claustro.innerHTML += `<option value="${x.id}">${x.nombre}</option>`
     })
-
 }
 
 async function cargarSedes(){
@@ -90,10 +78,6 @@ async function cargarSedes(){
         return
     }
 
-    /*const res = await fetch(`/api/sede/facultad/${idFacultad}`, {
-        credentials: 'include'
-    })*/
-
     const data = await apiFetch(`/api/sede/facultad/${idFacultad}`)
 
     sede.innerHTML = `<option value="">Seleccione</option>`
@@ -101,26 +85,9 @@ async function cargarSedes(){
     data.forEach(x=>{
         sede.innerHTML += `<option value="${x.id}">${x.nombre}</option>`
     })
-
-}
-
-function verificarClaustro(){
-
-    const id = claustro.value
-    const c = claustros.find(x=>x.id == id)
-
-    if(!c) return
-
-    if(c.nombre.toLowerCase() === "nodocentes"){
-        grupoSede.style.display = "none"
-        sede.value = ""
-    }else{
-        grupoSede.style.display = "block"
-    }
 }
 
 facultad.addEventListener("change", cargarSedes)
-claustro.addEventListener("change", verificarClaustro)
 
 cargarCatalogos()
 
@@ -128,14 +95,9 @@ formImportar.addEventListener("submit", async e=>{
 
     e.preventDefault()
 
-    const claustroSeleccionado = claustros.find(c => c.id == claustro.value)
-
-    if(
-        claustroSeleccionado &&
-        claustroSeleccionado.nombre.toLowerCase() !== "nodocentes" &&
-        !sede.value
-    ){
-        alert("Debe seleccionar una sede para este claustro")
+    // VALIDACIÓN SIMPLE (ahora SIEMPRE obligatoria)
+    if(!sede.value){
+        alert("Debe seleccionar una sede")
         return
     }
 
@@ -147,21 +109,10 @@ formImportar.addEventListener("submit", async e=>{
     formData.append("id_claustro", claustro.value)
     formData.append("id_sede", sede.value)
 
-    /*const res = await fetch("/api/padrones/importar", {
+    const data = await apiFetch('/api/padrones/importar', {
         method: "POST",
-        credentials: "include",
-        headers: {
-            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
-        },
         body: formData
     })
-
-    const data = await res.json()*/
-
-    const data = await apiFetch('/api/padrones/importar', {
-    method: "POST",
-    body: formData
-})
 
     if(data.duplicados){
         let mensaje = "El padrón contiene personas duplicadas:\n\n"

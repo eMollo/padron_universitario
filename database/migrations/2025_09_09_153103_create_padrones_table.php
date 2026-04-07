@@ -16,7 +16,7 @@ return new class extends Migration
             $table->integer('anio');
             $table->foreignId('id_claustro')->constrained('claustros')->onDelete('cascade');
             $table->foreignId('id_facultad')->constrained('facultad')->onDelete('cascade');
-            $table->foreignId('id_sede')->nullable()->constrained('sede')->onDelete('cascade');
+            $table->foreignId('id_sede')->constrained('sede')->onDelete('cascade');
             //metadata útil
             $table->string('origen_archivo')->nullable();//nombre del xlsx importado
             $table->unsignedBigInteger('importado_por')->nullable();//user_id si luego se implementan users

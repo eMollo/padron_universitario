@@ -94,6 +94,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::post('padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);
         Route::post('padrones/baja-masiva', [PadronController::class, 'bajaMasiva']);
         Route::post('padrones/buscar', [PadronBusquedaController::class, 'buscar']);
+        Route::post('padrones/{id}/agregar-persona', [PadronController::class, 'agregarPersona']);
 
         Route::post('comparador/buscar', [PadronComparadorController::class, 'buscar']);
         Route::post('comparador/comparar', [PadronComparadorController::class, 'comparar']);

@@ -29,6 +29,8 @@ class SedeSeeder extends Seeder
             ['nombre' => 'Rio Colorado (Complejo Universitario Regional Zona Atlántica y Sur)', 'id_facultad' => 3], //Agregado recientemente
             ['nombre' => 'San Antonio Oeste (Facultad de Ciencias Marinas)', 'id_facultad' => 4],
             ['nombre' => 'Cipolletti (Facultad de Ciencias Médicas)', 'id_facultad' => 5],
+            ['nombre' => 'Cutral Có (Facultad de Ciencias Médicas)', 'id_facultad' => 5],
+            ['nombre' => 'Junín de los Andes (Facultad de Ciencias Médicas)', 'id_facultad' => 5],
             ['nombre' => 'Neuquén (Facultad de Ciencias del Ambiente y la Salud)', 'id_facultad' => 6],
             ['nombre' => 'Allen (Facultad de Ciencias del Ambiente y la Salud)', 'id_facultad' => 6],
             ['nombre' => 'Zapala (Facultad de Ciencias del Ambiente y la Salud)', 'id_facultad' => 6],
@@ -49,7 +51,7 @@ class SedeSeeder extends Seeder
             ['nombre' => 'Zapala (Facultad de Humanidades)', 'id_facultad' => 11],
             ['nombre' => 'Chos Malal (Facultad de Humanidades)', 'id_facultad' => 11],
             ['nombre' => 'Neuquén (Facultad de Informática)', 'id_facultad' => 12],
-            ['nombre' => 'Chos Malal (Facultad de Informática)', 'id_facultad' => 12],
+            ['nombre' => 'Cutral Có (Facultad de Informática)', 'id_facultad' => 12],
             ['nombre' => 'Neuquén (Facultad de Ingeniería)', 'id_facultad' => 13],
             //['nombre' => 'Zapala (Facultad de Ingeniería)', 'id_facultad' => 13],
             ['nombre' => 'General Roca (Facultad de Lenguas)', 'id_facultad' => 14],
@@ -57,6 +59,7 @@ class SedeSeeder extends Seeder
             ['nombre' => 'San Martin de los Andes (Facultad de Turismo)', 'id_facultad' => 16],
             ['nombre' => 'Neuquén (Facultad de Turismo)', 'id_facultad' => 16],
             ['nombre' => 'Zapala (Facultad de Turismo)', 'id_facultad' => 16],
+            ['nombre' => 'Plaza Huincul (Facultad de Turismo)', 'id_facultad' => 16],
             ['nombre' => 'San Martin de los Andes (Centro Regional Universitario San Martín de los Andes)', 'id_facultad' => 17],
             ['nombre' => 'Zapala (Centro Regional Universitario Zapala)', 'id_facultad' => 18],
         ]);

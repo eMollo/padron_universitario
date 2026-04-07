@@ -17,7 +17,7 @@ class ClaustroSeeder extends Seeder
             ['nombre' => 'Docentes'],
             ['nombre' => 'Nodocentes'],
             ['nombre' => 'Estudiantes'],
-            ['nombre' => 'Graduados'],
+            ['nombre' => 'Personas Graduadas'],
         ]);
     }
 }

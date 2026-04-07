@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
+
 class PadronController extends Controller {
     
     public function index(Request $request)
@@ -47,12 +48,13 @@ class PadronController extends Controller {
                 'inscripciones as inscripciones_activas_count' => function ($q) {
                     $q->whereNull('deleted_at');
                 },
-                // totales (incluye soft deleted)
+                // totales
                 'inscripciones as inscripciones_totales_count'
             ])
             ->orderBy('anio', 'desc')
             ->orderBy('id_facultad')
             ->orderBy('id_claustro')
+            ->orderBy('id_sede') // agregado
             ->get();
     }
 
@@ -74,7 +76,7 @@ class PadronController extends Controller {
             'anio' => 'required|integer',
             'id_facultad' => 'required|exists:facultad,id',
             'id_claustro' => 'required|exists:claustros,id',
-            'id_sede' => 'nullable|exists:sede,id',
+            'id_sede' => 'required|exists:sede,id', // ahora obligatorio
         ]);
 
         DB::beginTransaction();
@@ -82,16 +84,16 @@ class PadronController extends Controller {
         try {
 
             $exists = Padron::where([
-            'anio' => $request->anio,
-            'id_claustro' => $request->id_claustro,
-            'id_facultad' => $request->id_facultad,
-            'id_sede' => $request->id_sede,
+                'anio' => $request->anio,
+                'id_claustro' => $request->id_claustro,
+                'id_facultad' => $request->id_facultad,
+                'id_sede' => $request->id_sede,
             ])->exists();
 
             if ($exists) {
-            return response()->json([
-                'error' => 'Ya existe un padrón para esa combinación'
-            ], 422);
+                return response()->json([
+                    'error' => 'Ya existe un padrón para esa combinación'
+                ], 422);
             }
 
             $padron = Padron::create([
@@ -133,7 +135,6 @@ class PadronController extends Controller {
         }
     }
 
-
     public function destroy($id)
     {
         $padron = Padron::find($id);
@@ -147,8 +148,10 @@ class PadronController extends Controller {
         return response()->json(['message' => 'Padrón eliminado correctamente']);
     }
 
-    //ULTIMA PARTE AGREGADA
-    
+    // =========================
+    // BAJA MASIVA
+    // =========================
+
     private function construirQueryBaja(array $filters)
     {
         $query = DB::table('inscripciones as i')
@@ -233,13 +236,17 @@ class PadronController extends Controller {
         ]);
     }
 
+    // =========================
+    // RESUMEN (FIX IMPORTANTE)
+    // =========================
+
     public function resumen()
     {
         $resumen = DB::table('inscripciones as i')
             ->join('padrones as p', 'p.id', '=', 'i.id_padron')
-            ->join('facultades as f', 'f.id', '=', 'p.id_facultad')
+            ->join('facultad as f', 'f.id', '=', 'p.id_facultad')
             ->join('claustros as c', 'c.id', '=', 'p.id_claustro')
-            ->leftJoin('sedes as s', 's.id', '=', 'p.id_sede')
+            ->join('sede as s', 's.id', '=', 'p.id_sede') // antes leftJoin
             ->whereNull('i.deleted_at')
             ->select(
                 'p.anio',
@@ -263,6 +270,10 @@ class PadronController extends Controller {
         return response()->json($resumen);
     }
 
+    // =========================
+    // PERSONAS
+    // =========================
+
     public function personas(Request $request, $id)
     {
         $perPage = $request->get('per_page', 50);
@@ -281,9 +292,9 @@ class PadronController extends Controller {
 
         if ($buscar) {
             $query->where(function ($q) use ($buscar) {
-                $q->where('p.dni', 'like', "%{$buscar}%")
-                ->orWhere('p.apellido', 'ilike', "%{$buscar}%")
-                ->orWhere('p.nombre', 'ilike', "%{$buscar}%");
+                $q->where('p.dni', 'ilike', "%{$buscar}%")
+                  ->orWhere('p.apellido', 'ilike', "%{$buscar}%")
+                  ->orWhere('p.nombre', 'ilike', "%{$buscar}%");
             });
         }
 
@@ -295,5 +306,107 @@ class PadronController extends Controller {
         return response()->json($personas);
     }
 
+    public function agregarPersona(Request $request, $id)
+{
+    $request->validate([
+        'dni' => 'required',
+        'apellido' => 'required|string',
+        'nombre' => 'required|string',
+        'legajo' => 'nullable|string'
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+
+        //  verificar padrón
+        $padron = Padron::find($id);
+
+        if (!$padron) {
+            return response()->json([
+                'error' => 'Padrón no encontrado'
+            ], 404);
+        }
+
+        //  normalizar DNI
+        $dni = preg_replace('/\D/', '', $request->dni);
+
+        if (!$dni) {
+            return response()->json([
+                'error' => 'DNI inválido'
+            ], 422);
+        }
+
+        // buscar o crear persona
+        $persona = Persona::firstOrCreate(
+            ['dni' => $dni],
+            [
+                'apellido' => trim($request->apellido),
+                'nombre' => trim($request->nombre)
+            ]
+        );
+
+        //  CASO 1: ya existe activa
+        $existeActiva = DB::table('inscripciones')
+            ->where('id_padron', $id)
+            ->where('id_persona', $persona->id)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($existeActiva) {
+            return response()->json([
+                'error' => 'La persona ya está en el padrón'
+            ], 422);
+        }
+
+        //  CASO 2: existe pero estaba borrada → reactivar
+        $existeBorrada = DB::table('inscripciones')
+            ->where('id_padron', $id)
+            ->where('id_persona', $persona->id)
+            ->whereNotNull('deleted_at')
+            ->first();
+
+        if ($existeBorrada) {
+
+            DB::table('inscripciones')
+                ->where('id', $existeBorrada->id)
+                ->update([
+                    'deleted_at' => null,
+                    'legajo' => $request->legajo,
+                    'updated_at' => now()
+                ]);
+
+            DB::commit();
+
+            return response()->json([
+                'mensaje' => 'Persona reactivada en el padrón'
+            ]);
+        }
+
+        //  CASO 3: nueva inscripción
+        DB::table('inscripciones')->insert([
+            'id_persona' => $persona->id,
+            'id_padron'  => $id,
+            'legajo'     => $request->legajo,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::commit();
+
+        return response()->json([
+            'mensaje' => 'Persona agregada correctamente'
+        ]);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'Error al agregar persona',
+            'detalle' => $e->getMessage()
+        ], 500);
+    }
 }
 
+}
