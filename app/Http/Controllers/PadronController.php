@@ -136,21 +136,43 @@ class PadronController extends Controller {
     }
 
     public function destroy($id)
-    {
+{
+    DB::beginTransaction();
+
+    try {
+
         $padron = Padron::find($id);
 
         if (!$padron) {
             return response()->json(['message' => 'Padrón no encontrado'], 404);
         }
 
+        // eliminar inscripciones del padrón
+        DB::table('inscripciones')
+            ->where('id_padron', $id)
+            ->delete();
+
+        // eliminar padrón
         $padron->delete();
 
-        return response()->json(['message' => 'Padrón eliminado correctamente']);
-    }
+        DB::commit();
 
-    // =========================
+        return response()->json([
+            'message' => 'Padrón eliminado correctamente'
+        ]);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        return response()->json([
+            'error' => 'Error al eliminar padrón',
+            'detalle' => $e->getMessage()
+        ], 500);
+    }
+}
+
     // BAJA MASIVA
-    // =========================
 
     private function construirQueryBaja(array $filters)
     {

@@ -52,6 +52,8 @@ href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 
 <script>
 
+const esAdmin = {{ auth()->user()?->hasRole('admin') ? 'true' : 'false' }};
+
 let tabla = null
 
 async function cargarPadrones(){
@@ -95,6 +97,12 @@ Ver
    href="/api/padrones/${p.id}/export">
 Exportar
 </a>
+
+${esAdmin ? `
+<button class="btn btn-danger btn-sm" onclick="eliminarPadron(${p.id})">
+    Eliminar
+</button>
+` : ''}
 </td>
 </tr>
 
@@ -107,6 +115,23 @@ document.querySelector("#tablaPadrones tbody").innerHTML = html
 tabla = new DataTable("#tablaPadrones")
 
 }
+
+
+async function eliminarPadron(id){
+
+    if(!confirm("¿Seguro que desea eliminar este padrón? Esta acción no se puede deshacer.")){
+        return
+    }
+
+    const data = await apiFetch(`/api/padrones/${id}`, {
+        method: "DELETE"
+    })
+
+    alert(data.message || data.error)
+
+    location.reload()
+}
+
 
 cargarPadrones()
 

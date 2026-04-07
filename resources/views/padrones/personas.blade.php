@@ -5,9 +5,11 @@
 <h3>Personas del padrón</h3>
 
 <!-- BOTÓN NUEVO -->
+@if(auth()->user()?->hasRole('admin'))
 <button class="btn btn-success mb-3" onclick="abrirModal()">
     + Agregar persona
 </button>
+@endif
 
 <input
 type="text"
@@ -30,7 +32,7 @@ placeholder="Buscar por DNI, apellido o nombre">
 
 </table>
 
-<!-- 🧩 MODAL -->
+<!-- MODAL -->
 <div class="modal fade" id="modalPersona" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
