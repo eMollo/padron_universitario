@@ -14,8 +14,8 @@ class ClaustroSeeder extends Seeder
     public function run(): void
     {
         DB::table('claustros')->insert([
-            ['nombre' => 'Docentes'],
-            ['nombre' => 'Nodocentes'],
+            ['nombre' => 'Docente'],
+            ['nombre' => 'Nodocente'],
             ['nombre' => 'Estudiantes'],
             ['nombre' => 'Personas Graduadas'],
         ]);

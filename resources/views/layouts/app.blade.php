@@ -80,6 +80,12 @@ Salir
         </a>
     </li>
 
+    <li class="nav-item">
+        <a href="/admin/sedes" class="nav-link">
+            Gestionar Sedes
+        </a>
+    </li>
+
 @endif
 
 </ul>

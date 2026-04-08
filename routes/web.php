@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
         Route::get('/padrones/importar', fn() => view('padrones.importar'));
         Route::get('/admin/comparador', fn() => view('admin.padron-comparador'));
         Route::get('/admin/comparador/bajas', fn() => view('admin.padron-bajas'));
+        Route::get('/admin/sedes', fn() => view('admin.sedes'));
 
     });
 
@@ -103,6 +104,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::get('comparador/bajas', [PadronComparadorController::class, 'bajas']);
 
         Route::post('comparador/export-bajas', [PadronExportController::class, 'exportBajas']);
+
+        Route::post('/sedes', [SedeController::class, 'store']);
         
 
     });
