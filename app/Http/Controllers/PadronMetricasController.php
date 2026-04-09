@@ -35,10 +35,26 @@ class PadronMetricasController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        // POR FACULTAD + CLAUSTRO
+        $porFacultadClaustro = DB::table('padron_resumen as pr')
+            ->join('facultad as f', 'f.id', '=', 'pr.id_facultad')
+            ->join('claustros as c', 'c.id', '=', 'pr.id_claustro')
+            ->select(
+                'f.nombre as facultad',
+                'c.nombre as claustro',
+                DB::raw('SUM(pr.total) as total')
+            )
+            ->when($anio, fn($q) => $q->where('pr.anio', $anio))
+            ->groupBy('f.nombre', 'c.nombre')
+            ->orderBy('f.nombre')
+            ->orderBy('c.nombre')
+            ->get();
+
         return response()->json([
             'total' => $totalGeneral,
             'por_facultad' => $porFacultad,
-            'por_claustro' => $porClaustro
+            'por_claustro' => $porClaustro,
+            'por_facultad_claustro' => $porFacultadClaustro // 👈 NUEVO
         ]);
     }
 

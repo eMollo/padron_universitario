@@ -36,6 +36,8 @@
 
 <div class="row">
 
+    
+
     {{-- POR FACULTAD --}}
     <div class="col-md-6">
         <div class="card">
@@ -67,6 +69,21 @@
             </table>
         </div>
     </div>
+
+    <div class="card mt-4">
+    <div class="card-header">Por Unidad Electoral + Claustro</div>
+
+    <table class="table mb-0">
+        <thead>
+            <tr>
+                <th>Unidad Electoral</th>
+                <th>Claustro</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody id="tablaFacultadClaustro"></tbody>
+    </table>
+</div>
 
 </div>
 
@@ -106,6 +123,43 @@ async function cargarMetricas(){
         </tr>`
     })
     document.getElementById('tablaClaustro').innerHTML = htmlClau
+
+    // FACULTAD + CLAUSTRO
+    // AGRUPAR POR FACULTAD
+let agrupado = {}
+
+data.por_facultad_claustro.forEach(x => {
+    if (!agrupado[x.facultad]) {
+        agrupado[x.facultad] = []
+    }
+    agrupado[x.facultad].push(x)
+})
+
+let htmlFC = ''
+
+Object.keys(agrupado).forEach(facultad => {
+
+    // FILA TITULO (FACULTAD)
+    htmlFC += `
+    <tr class="table-secondary">
+        <td colspan="3"><strong>${facultad}</strong></td>
+    </tr>
+    `
+
+    // FILAS HIJAS (CLAUSTROS)
+    agrupado[facultad].forEach(item => {
+        htmlFC += `
+        <tr>
+            <td></td>
+            <td>${item.claustro}</td>
+            <td>${item.total}</td>
+        </tr>
+        `
+    })
+
+})
+
+document.getElementById('tablaFacultadClaustro').innerHTML = htmlFC
 }
 
 document.addEventListener('DOMContentLoaded', () => {

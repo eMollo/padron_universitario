@@ -20,7 +20,7 @@ class PadronResumenService
             // 1. Limpiar resumen existente para el año
             PadronResumen::where('anio', $anio)->delete();
 
-            // 2. Recalcular desde inscripciones
+            // 2. Recalcular SOLO con inscripciones activas
             $resumen = Inscripcion::query()
                 ->join('padrones', 'inscripciones.id_padron', '=', 'padrones.id')
                 ->selectRaw('
@@ -30,6 +30,10 @@ class PadronResumenService
                     COUNT(*) as total
                 ')
                 ->where('padrones.anio', $anio)
+
+                // IMPORTANTE: Solo contar inscripciones activas (no eliminadas)
+                ->whereNull('inscripciones.deleted_at')
+
                 ->groupBy(
                     'padrones.anio',
                     'padrones.id_facultad',

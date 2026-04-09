@@ -106,6 +106,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::post('comparador/export-bajas', [PadronExportController::class, 'exportBajas']);
 
         Route::post('/sedes', [SedeController::class, 'store']);
+        Route::get('/sedes', [SedeController::class, 'index']);
+        Route::delete('/sedes/{id}', [SedeController::class, 'destroy']);
         
 
     });

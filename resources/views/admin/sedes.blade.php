@@ -2,7 +2,9 @@
 
 @section('content')
 
-<h3>Agregar Sede</h3>
+<h3>Gestión de Sedes</h3>
+
+<!-- FORM CREAR -->
 
 <form id="formSede">
 
@@ -18,17 +20,45 @@
 <input type="text" id="nombre" class="form-control" required placeholder="Ej: General Roca">
 </div>
 
-</div>
-
-<button class="btn btn-primary">
+<div class="col-md-2 mb-3 d-flex align-items-end">
+<button class="btn btn-primary w-100">
 Crear sede
 </button>
+</div>
+
+</div>
 
 </form>
+
+<hr>
+
+<!-- ===================== -->
+<!-- LISTADO -->
+<!-- ===================== -->
+
+<h5>Listado de sedes</h5>
+
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Sede</th>
+<th>Facultad</th>
+<th width="180">Estado / Acciones</th>
+</tr>
+</thead>
+
+<tbody id="tablaSedes"></tbody>
+
+</table>
 
 <script>
 
 const facultad = document.getElementById("facultad")
+
+// =======================
+// CARGAR FACULTADES
+// =======================
 
 async function cargarFacultades(){
 
@@ -41,7 +71,44 @@ async function cargarFacultades(){
     })
 }
 
-cargarFacultades()
+// =======================
+// CARGAR SEDES
+// =======================
+
+async function cargarSedes(){
+
+    const data = await apiFetch("/api/sedes")
+
+    let html = ""
+
+    data.forEach(s=>{
+
+        html += `
+        <tr>
+            <td>${s.nombre}</td>
+            <td>${s.facultad?.sigla ?? ''}</td>
+            <td>
+                ${
+                    s.usada
+                    ? `<span class="badge bg-secondary">
+                         En uso (${s.padrones_count})
+                       </span>`
+                    : `<button class="btn btn-danger btn-sm"
+                               onclick="eliminarSede(${s.id})">
+                           Eliminar
+                       </button>`
+                }
+            </td>
+        </tr>
+        `
+    })
+
+    document.getElementById("tablaSedes").innerHTML = html
+}
+
+// =======================
+// CREAR SEDE
+// =======================
 
 formSede.addEventListener("submit", async e=>{
 
@@ -75,7 +142,39 @@ formSede.addEventListener("submit", async e=>{
 
     document.getElementById("formSede").reset()
 
+    cargarSedes() // 🔥 refresca la tabla automáticamente
 })
+
+// =======================
+// ELIMINAR SEDE
+// =======================
+
+async function eliminarSede(id){
+
+    if(!confirm("¿Seguro que desea eliminar esta sede?")){
+        return
+    }
+
+    const data = await apiFetch(`/api/sedes/${id}`, {
+        method: "DELETE"
+    })
+
+    if(data.error){
+        alert(data.error + (data.detalle ? "\n" + data.detalle : ""))
+        return
+    }
+
+    alert(data.message)
+
+    cargarSedes()
+}
+
+// =======================
+// INIT
+// =======================
+
+cargarFacultades()
+cargarSedes()
 
 </script>
 

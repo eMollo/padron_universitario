@@ -8,11 +8,57 @@ use App\Models\Facultad;
 
 class SedeController extends Controller
 {
+
+    // LISTAR SEDES (CON USO)
+
     public function index()
     {
-        //Retorna todas las sedes en JSON
-        return response()->json(Sede::with('facultad')->get(), 200);//con la facultad relacionada
+        $sedes = Sede::with('facultad')
+            ->withCount('padrones') // CUENTA USO
+            ->orderBy('id_facultad')
+            ->orderBy('nombre')
+            ->get()
+            ->map(function ($s) {
+                return [
+                    'id' => $s->id,
+                    'nombre' => $s->nombre,
+                    'facultad' => [
+                        'nombre' => $s->facultad?->nombre,
+                        'sigla' => $s->facultad?->sigla,
+                    ],
+                    'padrones_count' => $s->padrones_count,
+                    'usada' => $s->padrones_count > 0
+                ];
+            });
+
+        return response()->json($sedes);
     }
+
+    // ELIMINAR SEDE (SEGURO)
+
+    public function destroy($id)
+    {
+        $sede = Sede::withCount('padrones')->find($id);
+
+        if (!$sede) {
+            return response()->json(['error' => 'Sede no encontrada'], 404);
+        }
+
+        
+        if ($sede->padrones_count > 0) {
+            return response()->json([
+                'error' => 'No se puede eliminar la sede porque está en uso',
+                'detalle' => "Está asociada a {$sede->padrones_count} padrón(es)"
+            ], 422);
+        }
+
+        $sede->delete();
+
+        return response()->json([
+            'message' => 'Sede eliminada correctamente'
+        ]);
+    }
+
 
     public function store(Request $request)
     {
