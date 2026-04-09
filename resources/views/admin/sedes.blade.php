@@ -142,7 +142,7 @@ formSede.addEventListener("submit", async e=>{
 
     document.getElementById("formSede").reset()
 
-    cargarSedes() // 🔥 refresca la tabla automáticamente
+    cargarSedes() //  refresca la tabla automáticamente
 })
 
 // =======================
