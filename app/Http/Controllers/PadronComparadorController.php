@@ -12,7 +12,6 @@ use App\Services\PersonaBuscarService;
 
 class PadronComparadorController extends Controller
 {
-
     public function buscar(Request $request)
     {
         $resultado = PersonaBuscarService::ejecutar($request);
@@ -27,7 +26,21 @@ class PadronComparadorController extends Controller
             'mode' => 'nullable|string',
             'id_facultad' => 'nullable|integer',
             'id_claustro' => 'nullable|integer',
+            'id_claustro_1' => 'nullable|integer',
+            'id_claustro_2' => 'nullable|integer',
         ]);
+
+        // Validación extra
+        if (
+            ($data['mode'] ?? null) === 'entre_claustros' &&
+            !empty($data['id_claustro_1']) &&
+            !empty($data['id_claustro_2']) &&
+            $data['id_claustro_1'] == $data['id_claustro_2']
+        ) {
+            return response()->json([
+                'error' => 'Debe seleccionar dos claustros distintos'
+            ], 400);
+        }
 
         return response()->json(
             $service->comparar($data)
@@ -53,7 +66,7 @@ class PadronComparadorController extends Controller
         $inscripcion->baja_realizada_por = auth()->id();
         $inscripcion->save();
 
-        $inscripcion->delete(); // soft delete
+        $inscripcion->delete();
 
         return response()->json([
             'success' => true
@@ -91,5 +104,4 @@ class PadronComparadorController extends Controller
             ->orderByDesc('i.deleted_at')
             ->get();
     }
-
 }

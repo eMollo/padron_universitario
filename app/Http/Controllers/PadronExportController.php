@@ -76,6 +76,8 @@ public function export($id)
             'mode' => 'required|string',
             'id_facultad' => 'nullable|integer',
             'id_claustro' => 'nullable|integer',
+            'id_claustro_1' => 'nullable|integer',
+    'id_claustro_2' => 'nullable|integer',
         ]);
 
         $resultado = $service->comparar($filters);

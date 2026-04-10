@@ -17,6 +17,7 @@ use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\AvalController;
 use App\Http\Controllers\PadronMetricasController;
 use App\Services\PadronResumenService;
+use App\Http\Controllers\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,9 +48,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/padrones/{id}/personas', fn($id) => view('padrones.personas', compact('id')));
 
-    Route::get('/admin/comparador', fn() => view('admin.padron-comparador'))
-        ->middleware('role:admin');
-
     Route::get('/personas/buscar', fn() => view('personas.buscar'));
 
     Route::get('/api/metricas', [PadronMetricasController::class, 'index']);
@@ -60,7 +58,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
 
         Route::get('/padrones/importar', fn() => view('padrones.importar'));
-        Route::get('/admin/comparador', fn() => view('admin.padron-comparador'));
+        Route::get('/admin/comparador', [AdminController::class, 'comparador']);
         Route::get('/admin/comparador/bajas', fn() => view('admin.padron-bajas'));
         Route::get('/admin/sedes', fn() => view('admin.sedes'));
 
