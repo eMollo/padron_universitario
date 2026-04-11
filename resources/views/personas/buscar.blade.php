@@ -43,10 +43,9 @@ let orderBy = 'apellido'
 let orderDir = 'asc'
 let perPage = 15
 let debounceTimer = null
+const esAdmin = @json(auth()->user()->hasRole('admin'));
 
-
-// EVENTOS INPUT (DEBOUNCE)
-
+// EVENTOS INPUT
 
 document.querySelectorAll('#dni, #apellido, #nombre, #anio')
     .forEach(input => {
@@ -60,17 +59,13 @@ document.querySelectorAll('#dni, #apellido, #nombre, #anio')
     })
 
 
-// NUEVA BUSQUEDA
 
+// BUSQUEDA
 
 function nuevaBusqueda()
 {
     buscar(1)
 }
-
-
-// BUSCAR
-
 
 async function buscar(page = 1)
 {
@@ -104,8 +99,7 @@ async function buscar(page = 1)
 }
 
 
-// ORDENAR
-
+// ORDEN
 
 function ordenar(campo)
 {
@@ -119,18 +113,14 @@ function ordenar(campo)
     buscar(1)
 }
 
-// ICONO ORDEN
-
-
 function iconoOrden(campo)
 {
     if (orderBy !== campo) return ''
     return orderDir === 'asc' ? '↑' : '↓'
 }
 
-// =======================
+
 // RENDER
-// =======================
 
 function renderResultados(res)
 {
@@ -164,22 +154,23 @@ function renderResultados(res)
         </div>
 
         <table class="table table-bordered table-sm">
-            <thead>
-                <tr>
-                    <th onclick="ordenar('apellido')" style="cursor:pointer">
-                        Apellido y Nombre ${iconoOrden('apellido')}
-                    </th>
-                    <th onclick="ordenar('dni')" style="cursor:pointer">
-                        DNI ${iconoOrden('dni')}
-                    </th>
-                    <th>Año</th>
-                    <th>Facultad</th>
-                    <th>Claustro</th>
-                    <th>Legajo</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
+        <thead>
+            <tr>
+                <th onclick="ordenar('apellido')" style="cursor:pointer">
+                    Apellido y Nombre ${iconoOrden('apellido')}
+                </th>
+                <th onclick="ordenar('dni')" style="cursor:pointer">
+                    DNI ${iconoOrden('dni')}
+                </th>
+                <th>Año</th>
+                <th>Facultad</th>
+                <th>Claustro</th>
+                <th>Legajo</th>
+                <th>Estado</th>
+                ${esAdmin ? '<th>Acción</th>' : ''}
+            </tr>
+        </thead>
+        <tbody>
     `
 
     personas.forEach(p => {
@@ -203,6 +194,18 @@ function renderResultados(res)
                             ${i.estado}
                         </span>
                     </td>
+                    ${esAdmin ? `
+                    <td>
+                        ${
+                            i.estado === 'ACTIVA'
+                            ? `<button class="btn btn-danger btn-sm"
+                                onclick="darBaja(${i.inscripcion_id})">
+                                Dar baja
+                            </button>`
+                            : ''
+                        }
+                    </td>
+                    ` : ''}
                 </tr>
             `
         })
@@ -210,7 +213,6 @@ function renderResultados(res)
 
     html += `</tbody></table>`
 
-    // PAGINACIÓN
     html += `
         <div class="d-flex justify-content-between align-items-center mt-3">
     `
@@ -246,9 +248,36 @@ function renderResultados(res)
     document.getElementById('resultados').innerHTML = html
 }
 
-// =======================
+
+// BAJA MANUAL
+
+async function darBaja(inscripcion_id)
+{
+    const motivo = prompt("Motivo de la baja:")
+
+    if (!motivo) return
+
+    if (!confirm("¿Confirmar baja de inscripción?")) return
+
+    const json = await apiFetch('/api/comparador/baja-inscripcion', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+            inscripcion_id,
+            motivo
+        })
+    })
+
+    if(json.success){
+        alert('Inscripción dada de baja')
+        buscar(paginaActual)
+    } else {
+        alert(json.error)
+    }
+}
+
+
 // PER PAGE
-// =======================
 
 function cambiarPerPage(valor)
 {
