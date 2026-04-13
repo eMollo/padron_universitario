@@ -210,6 +210,7 @@ class PersonaBuscarService
                     'facultad' => optional(optional($i->padron)->facultad)->sigla
                         ?? optional(optional($i->padron)->facultad)->nombre,
                     'claustro' => optional(optional($i->padron)->claustro)->nombre,
+                    'sede' => optional(optional($i->padron)->sede)->nombre,
                     'legajo' => $i->legajo,
                     'motivo_baja' => $i->motivo_baja,
                     'baja_realizada_por' => optional($i->usuarioBaja)->name,

@@ -211,6 +211,7 @@ function renderResultados(res)
                 </th>
                 <th>Año</th>
                 <th>Unidad Electoral</th>
+                <th>Sede</th>
                 <th>Claustro</th>
                 <th>Legajo</th>
                 <th>Estado</th>
@@ -231,6 +232,7 @@ function renderResultados(res)
                     <td>${safe(p.dni)}</td>
                     <td>${safe(i.anio)}</td>
                     <td>${safe(i.facultad)}</td>
+                    <td>${safe(i.sede)}</td>
                     <td>${safe(i.claustro)}</td>
                     <td>${safe(i.legajo)}</td>
                     <td>
