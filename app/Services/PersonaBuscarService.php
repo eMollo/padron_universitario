@@ -89,9 +89,7 @@ class PersonaBuscarService
         ];
     }
 
-    // =========================
     // BASE QUERY
-    // =========================
 
     private static function buildBaseQuery(
         $dni,
@@ -179,9 +177,7 @@ class PersonaBuscarService
         return $query;
     }
 
-    // =========================
     // ORDERING
-    // =========================
 
     private static function applyOrdering($query, $orderBy, $orderDir)
     {
@@ -196,9 +192,7 @@ class PersonaBuscarService
         return $query;
     }
 
-    // =========================
     // TRANSFORM
-    // =========================
 
     private static function transformPersona($persona)
     {

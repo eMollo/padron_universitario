@@ -7,6 +7,8 @@ use App\Models\Persona;
 use App\Services\PersonaBuscarService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Support\DniNormalizer;
+use Illuminate\Validation\Rule;
 
 class PersonaController extends Controller
 {
@@ -51,11 +53,26 @@ class PersonaController extends Controller
             return response()->json(['message' => 'Persona no encontrada'], 404);
         }
 
+        $dni_norm = null;
+
+        if ($request->has('dni')) {
+            $dni_norm = DniNormalizer::normalizar($request->dni);
+        }
+
         $validated = $request->validate([
             'nombre' => 'sometimes|string|max:100',
             'apellido' => 'sometimes|string|max:100',
-            'dni' => 'sometimes|string|unique:personas,dni,' . $persona->id . ',id', #MODIFICADO (id_persona -> id)
+            'dni' => [
+                'sometimes',
+                'string',
+                Rule::unique('personas', 'dni_normalizado')
+                    ->ignore($persona->id)
+            ],
         ]);
+
+        if ($dni_norm !== null) {
+            $validated['dni_normalizado'] = $dni_norm;
+        }
 
         $persona->update($validated);
 

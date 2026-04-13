@@ -106,6 +106,9 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::post('/sedes', [SedeController::class, 'store']);
         Route::get('/sedes', [SedeController::class, 'index']);
         Route::delete('/sedes/{id}', [SedeController::class, 'destroy']);
+
+        Route::put('personas/{id}', [PersonaController::class, 'update']);
+        Route::put('inscripciones/{id}', [InscripcionController::class, 'update']);
         
 
     });
@@ -132,7 +135,6 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::get('personas/{id}', [PersonaController::class, 'show'])->whereNumber('id');
     Route::get('personas', [PersonaController::class, 'index']);
     Route::post('personas', [PersonaController::class, 'store']);
-    Route::put('personas/{id}', [PersonaController::class, 'update']);
     Route::delete('personas/{id}', [PersonaController::class, 'destroy']);
 
     // CATÁLOGOS

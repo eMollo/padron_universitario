@@ -86,4 +86,19 @@ class InscripcionController extends Controller
         ]);
     }
 
+    public function update(Request $request, $id)
+    {
+        $data = $request->validate([
+            'legajo' => 'nullable|string|max:50',
+        ]);
+
+        $inscripcion = Inscripcion::findOrFail($id);
+
+        $inscripcion->update([
+            'legajo' => $data['legajo'],
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
 }

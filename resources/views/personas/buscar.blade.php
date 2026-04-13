@@ -36,6 +36,55 @@
 
 </div>
 
+@if(auth()->user()->hasRole('admin'))
+<!-- MODAL EDICIÓN -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Persona</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input type="hidden" id="edit_persona_id">
+        <input type="hidden" id="edit_inscripcion_id">
+
+        <div class="mb-2">
+            <label>DNI</label>
+            <input type="text" id="edit_dni" class="form-control">
+        </div>
+
+        <div class="mb-2">
+            <label>Apellido</label>
+            <input type="text" id="edit_apellido" class="form-control">
+        </div>
+
+        <div class="mb-2">
+            <label>Nombre</label>
+            <input type="text" id="edit_nombre" class="form-control">
+        </div>
+
+        <div class="mb-2">
+            <label>Legajo</label>
+            <input type="text" id="edit_legajo" class="form-control">
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-success" onclick="guardarEdicion()">
+            Guardar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+@endif
+
 <script>
 
 let paginaActual = 1
@@ -43,9 +92,16 @@ let orderBy = 'apellido'
 let orderDir = 'asc'
 let perPage = 15
 let debounceTimer = null
+
 const esAdmin = @json(auth()->user()->hasRole('admin'));
 
-// EVENTOS INPUT
+// HELPERS
+
+function safe(value) {
+    return value ?? ''
+}
+
+// INPUTS
 
 document.querySelectorAll('#dni, #apellido, #nombre, #anio')
     .forEach(input => {
@@ -58,14 +114,12 @@ document.querySelectorAll('#dni, #apellido, #nombre, #anio')
         })
     })
 
-
-
-// BUSQUEDA
-
 function nuevaBusqueda()
 {
     buscar(1)
 }
+
+// BUSCAR
 
 async function buscar(page = 1)
 {
@@ -98,7 +152,6 @@ async function buscar(page = 1)
     renderResultados(res)
 }
 
-
 // ORDEN
 
 function ordenar(campo)
@@ -119,7 +172,6 @@ function iconoOrden(campo)
     return orderDir === 'asc' ? '↑' : '↓'
 }
 
-
 // RENDER
 
 function renderResultados(res)
@@ -134,12 +186,8 @@ function renderResultados(res)
     }
 
     let html = `
-
         <div class="d-flex justify-content-between mb-2">
-
-            <div>
-                <strong>Total:</strong> ${meta.total}
-            </div>
+            <div><strong>Total:</strong> ${meta.total}</div>
 
             <div>
                 <select class="form-select form-select-sm"
@@ -150,7 +198,6 @@ function renderResultados(res)
                     <option value="100" ${perPage==100?'selected':''}>100</option>
                 </select>
             </div>
-
         </div>
 
         <table class="table table-bordered table-sm">
@@ -163,7 +210,7 @@ function renderResultados(res)
                     DNI ${iconoOrden('dni')}
                 </th>
                 <th>Año</th>
-                <th>Facultad</th>
+                <th>Unidad Electoral</th>
                 <th>Claustro</th>
                 <th>Legajo</th>
                 <th>Estado</th>
@@ -174,33 +221,41 @@ function renderResultados(res)
     `
 
     personas.forEach(p => {
-
         p.inscripciones.forEach(i => {
 
-            const estadoColor = i.estado === 'ACTIVA'
-                ? 'success'
-                : 'danger'
+            const estadoColor = i.estado === 'ACTIVA' ? 'success' : 'danger'
 
             html += `
                 <tr>
-                    <td>${p.apellido}, ${p.nombre}</td>
-                    <td>${p.dni}</td>
-                    <td>${i.anio ?? ''}</td>
-                    <td>${i.facultad ?? ''}</td>
-                    <td>${i.claustro ?? ''}</td>
-                    <td>${i.legajo ?? ''}</td>
+                    <td>${safe(p.apellido)}, ${safe(p.nombre)}</td>
+                    <td>${safe(p.dni)}</td>
+                    <td>${safe(i.anio)}</td>
+                    <td>${safe(i.facultad)}</td>
+                    <td>${safe(i.claustro)}</td>
+                    <td>${safe(i.legajo)}</td>
                     <td>
                         <span class="badge bg-${estadoColor}">
                             ${i.estado}
                         </span>
                     </td>
+
                     ${esAdmin ? `
                     <td>
+                        <button class="btn btn-warning btn-sm me-1 btn-editar"
+                            data-persona="${p.persona_id}"
+                            data-inscripcion="${i.inscripcion_id ?? ''}"
+                            data-apellido="${safe(p.apellido)}"
+                            data-nombre="${safe(p.nombre)}"
+                            data-dni="${safe(p.dni)}"
+                            data-legajo="${safe(i.legajo)}">
+                            Editar
+                        </button>
+
                         ${
                             i.estado === 'ACTIVA'
-                            ? `<button class="btn btn-danger btn-sm"
-                                onclick="darBaja(${i.inscripcion_id})">
-                                Dar baja
+                            ? `<button class="btn btn-danger btn-sm btn-baja"
+                                data-inscripcion="${i.inscripcion_id}">
+                                Baja
                             </button>`
                             : ''
                         }
@@ -218,29 +273,17 @@ function renderResultados(res)
     `
 
     if (meta.pagina_actual > 1) {
-        html += `
-            <button class="btn btn-outline-primary"
-                onclick="buscar(${meta.pagina_actual - 1})">
-                ← Anterior
-            </button>
-        `
+        html += `<button class="btn btn-outline-primary"
+            onclick="buscar(${meta.pagina_actual - 1})">← Anterior</button>`
     } else {
         html += `<div></div>`
     }
 
-    html += `
-        <span>
-            Página ${meta.pagina_actual} de ${meta.ultima_pagina}
-        </span>
-    `
+    html += `<span>Página ${meta.pagina_actual} de ${meta.ultima_pagina}</span>`
 
     if (meta.pagina_actual < meta.ultima_pagina) {
-        html += `
-            <button class="btn btn-outline-primary"
-                onclick="buscar(${meta.pagina_actual + 1})">
-                Siguiente →
-            </button>
-        `
+        html += `<button class="btn btn-outline-primary"
+            onclick="buscar(${meta.pagina_actual + 1})">Siguiente →</button>`
     }
 
     html += `</div>`
@@ -248,34 +291,100 @@ function renderResultados(res)
     document.getElementById('resultados').innerHTML = html
 }
 
+// EVENTOS (SIN onclick)
 
-// BAJA MANUAL
+document.addEventListener('click', async function(e) {
 
-async function darBaja(inscripcion_id)
-{
-    const motivo = prompt("Motivo de la baja:")
+    // EDITAR
+    if (e.target.classList.contains('btn-editar')) {
 
-    if (!motivo) return
+        const btn = e.target
 
-    if (!confirm("¿Confirmar baja de inscripción?")) return
+        document.getElementById('edit_persona_id').value = btn.dataset.persona
+        document.getElementById('edit_inscripcion_id').value = btn.dataset.inscripcion
+        document.getElementById('edit_apellido').value = btn.dataset.apellido
+        document.getElementById('edit_nombre').value = btn.dataset.nombre
+        document.getElementById('edit_dni').value = btn.dataset.dni
+        document.getElementById('edit_legajo').value = btn.dataset.legajo
 
-    const json = await apiFetch('/api/comparador/baja-inscripcion', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({
-            inscripcion_id,
-            motivo
+        new bootstrap.Modal(document.getElementById('modalEditar')).show()
+    }
+
+    // BAJA
+    if (e.target.classList.contains('btn-baja')) {
+
+        const inscripcion_id = e.target.dataset.inscripcion
+
+        if (!inscripcion_id) {
+            alert('Error: inscripción inválida')
+            return
+        }
+
+        const motivo = prompt("Motivo de la baja:")
+        if (!motivo) return
+
+        if (!confirm("¿Confirmar baja?")) return
+
+        const json = await apiFetch('/api/comparador/baja-inscripcion', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({ inscripcion_id, motivo })
         })
+
+        if(json.success){
+            alert('OK')
+            buscar(paginaActual)
+        } else {
+            alert(json.error)
+        }
+    }
+})
+
+// GUARDAR EDICIÓN
+
+async function guardarEdicion()
+{
+    const persona_id = document.getElementById('edit_persona_id').value
+    const inscripcion_id = document.getElementById('edit_inscripcion_id').value
+
+    if (!persona_id) {
+        alert('Error: persona inválida')
+        return
+    }
+
+    if (!inscripcion_id) {
+        alert('Error: inscripción inválida')
+        return
+    }
+
+    const persona = {
+        dni: document.getElementById('edit_dni').value,
+        apellido: document.getElementById('edit_apellido').value,
+        nombre: document.getElementById('edit_nombre').value
+    }
+
+    const inscripcion = {
+        legajo: document.getElementById('edit_legajo').value
+    }
+
+    await apiFetch(`/api/personas/${persona_id}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(persona)
     })
 
-    if(json.success){
-        alert('Inscripción dada de baja')
-        buscar(paginaActual)
-    } else {
-        alert(json.error)
-    }
-}
+    await apiFetch(`/api/inscripciones/${inscripcion_id}`, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(inscripcion)
+    })
 
+    alert('Actualizado correctamente')
+
+    bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide()
+
+    buscar(paginaActual)
+}
 
 // PER PAGE
 

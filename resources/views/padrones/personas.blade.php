@@ -4,7 +4,6 @@
 
 <h3>Personas del padrón</h3>
 
-<!-- BOTÓN NUEVO -->
 @if(auth()->user()?->hasRole('admin'))
 <button class="btn btn-success mb-3" onclick="abrirModal()">
     + Agregar persona
@@ -21,6 +20,7 @@ placeholder="Buscar por DNI, apellido o nombre">
 
 <thead>
 <tr>
+<th>#</th>
 <th>DNI</th>
 <th>Apellido</th>
 <th>Nombre</th>
@@ -32,20 +32,28 @@ placeholder="Buscar por DNI, apellido o nombre">
 
 </table>
 
+<!-- PAGINACIÓN -->
+<div class="d-flex justify-content-between align-items-center mt-3">
+
+    <button id="btnPrev" class="btn btn-outline-primary">← Anterior</button>
+
+    <span id="infoPagina"></span>
+
+    <button id="btnNext" class="btn btn-outline-primary">Siguiente →</button>
+
+</div>
+
 <!-- MODAL -->
 <div class="modal fade" id="modalPersona" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-
       <div class="modal-header">
         <h5 class="modal-title">Agregar persona al padrón</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
-
         <form id="formPersona">
-
           <div class="mb-3">
             <label>DNI</label>
             <input type="text" id="dni" class="form-control" required>
@@ -65,16 +73,13 @@ placeholder="Buscar por DNI, apellido o nombre">
             <label>Legajo</label>
             <input type="text" id="legajo" class="form-control">
           </div>
-
         </form>
-
       </div>
 
       <div class="modal-footer">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button class="btn btn-primary" onclick="guardarPersona()">Guardar</button>
       </div>
-
     </div>
   </div>
 </div>
@@ -83,16 +88,36 @@ placeholder="Buscar por DNI, apellido o nombre">
 
 const padronId = {{ $id }}
 
-async function cargarPersonas(buscar=""){
+let paginaActual = 1
+let ultimaPagina = 1
+let perPage = 50
+let textoBusqueda = ""
 
-    const data = await apiFetch(`/api/padrones/${padronId}/personas?buscar=${buscar}`)
+// CARGAR PERSONAS
 
-    tablaPersonas.innerHTML=""
+async function cargarPersonas(page = 1)
+{
+    paginaActual = page
 
-    data.data.forEach(p=>{
+    const res = await apiFetch(
+        `/api/padrones/${padronId}/personas?buscar=${textoBusqueda}&page=${page}&per_page=${perPage}`
+    )
+
+    const data = res.data
+    const meta = res.meta
+
+    ultimaPagina = meta.last_page
+
+    tablaPersonas.innerHTML = ""
+
+    data.forEach((p, index) => {
+
+        const numeroGlobal =
+            ((meta.current_page - 1) * meta.per_page) + index + 1
 
         tablaPersonas.innerHTML += `
         <tr>
+            <td>${numeroGlobal}</td>
             <td>${p.dni}</td>
             <td>${p.apellido}</td>
             <td>${p.nombre}</td>
@@ -100,21 +125,48 @@ async function cargarPersonas(buscar=""){
         </tr>
         `
     })
+
+    // INFO
+    infoPagina.innerText =
+        `Página ${meta.current_page} de ${meta.last_page} | Total: ${meta.total}`
+
+    // BOTONES
+    btnPrev.disabled = meta.current_page === 1
+    btnNext.disabled = meta.current_page === meta.last_page
 }
 
-cargarPersonas()
+// BUSCADOR (con debounce)
 
-buscar.addEventListener("keyup", e=>{
-    cargarPersonas(e.target.value)
+let debounceTimer = null
+
+buscar.addEventListener("input", e => {
+
+    clearTimeout(debounceTimer)
+
+    debounceTimer = setTimeout(() => {
+        textoBusqueda = e.target.value
+        cargarPersonas(1)
+    }, 400)
 })
 
+// BOTONES PAGINACIÓN
 
-    //MODAL FUNCIONES
+btnPrev.addEventListener("click", () => {
+    if (paginaActual > 1) {
+        cargarPersonas(paginaActual - 1)
+    }
+})
 
+btnNext.addEventListener("click", () => {
+    if (paginaActual < ultimaPagina) {
+        cargarPersonas(paginaActual + 1)
+    }
+})
+
+// MODAL
 
 function abrirModal(){
-    const modal = new bootstrap.Modal(document.getElementById('modalPersona'))
-    modal.show()
+    new bootstrap.Modal(document.getElementById('modalPersona')).show()
 }
 
 async function guardarPersona(){
@@ -131,15 +183,8 @@ async function guardarPersona(){
 
     const data = await apiFetch(`/api/padrones/${padronId}/agregar-persona`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            dni,
-            apellido,
-            nombre,
-            legajo
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dni, apellido, nombre, legajo })
     })
 
     if(data.error){
@@ -149,17 +194,16 @@ async function guardarPersona(){
 
     alert(data.mensaje)
 
-    // cerrar modal
-    const modalEl = document.getElementById('modalPersona')
-    const modal = bootstrap.Modal.getInstance(modalEl)
-    modal.hide()
+    bootstrap.Modal.getInstance(document.getElementById('modalPersona')).hide()
 
-    // limpiar form
     document.getElementById("formPersona").reset()
 
-    //  recargar tabla SIN recargar página
-    cargarPersonas()
+    cargarPersonas(paginaActual)
 }
+
+// INIT
+
+cargarPersonas()
 
 </script>
 

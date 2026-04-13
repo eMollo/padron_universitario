@@ -258,9 +258,7 @@ class PadronController extends Controller {
         ]);
     }
 
-    // =========================
-    // RESUMEN (FIX IMPORTANTE)
-    // =========================
+    // RESUMEN 
 
     public function resumen()
     {
@@ -292,41 +290,58 @@ class PadronController extends Controller {
         return response()->json($resumen);
     }
 
-    // =========================
     // PERSONAS
-    // =========================
 
     public function personas(Request $request, $id)
-    {
-        $perPage = $request->get('per_page', 50);
-        $buscar = $request->get('buscar');
+{
+    $perPage = min($request->get('per_page', 50), 200); // límite sano
+    $buscar = $request->get('buscar');
 
-        $query = DB::table('inscripciones as i')
-            ->join('personas as p', 'p.id', '=', 'i.id_persona')
-            ->where('i.id_padron', $id)
-            ->whereNull('i.deleted_at')
-            ->select(
-                'p.apellido',
-                'p.nombre',
-                'p.dni',
-                'i.legajo'
-            );
+    $query = DB::table('inscripciones as i')
+        ->join('personas as p', 'p.id', '=', 'i.id_persona')
+        ->where('i.id_padron', $id)
+        ->whereNull('i.deleted_at')
+        ->select(
+            'p.id as persona_id', 
+            'p.apellido',
+            'p.nombre',
+            'p.dni',
+            'i.id as inscripcion_id', 
+            'i.legajo'
+        );
 
-        if ($buscar) {
-            $query->where(function ($q) use ($buscar) {
-                $q->where('p.dni', 'ilike', "%{$buscar}%")
-                  ->orWhere('p.apellido', 'ilike', "%{$buscar}%")
-                  ->orWhere('p.nombre', 'ilike', "%{$buscar}%");
-            });
-        }
-
-        $personas = $query
-            ->orderBy('p.apellido')
-            ->orderBy('p.nombre')
-            ->paginate($perPage);
-
-        return response()->json($personas);
+    if ($buscar) {
+        $query->where(function ($q) use ($buscar) {
+            $q->where('p.dni', 'ilike', "%{$buscar}%")
+              ->orWhere('p.apellido', 'ilike', "%{$buscar}%")
+              ->orWhere('p.nombre', 'ilike', "%{$buscar}%");
+        });
     }
+
+    $personas = $query
+        ->orderBy('p.apellido')
+        ->orderBy('p.nombre')
+        ->paginate($perPage);
+
+    // TRANSFORMACIÓN (para el front)
+    return response()->json([
+        'data' => collect($personas->items())->map(function ($p) {
+            return [
+                'persona_id' => $p->persona_id,
+                'dni' => $p->dni,
+                'apellido' => $p->apellido,
+                'nombre' => $p->nombre,
+                'legajo' => $p->legajo,
+            ];
+        }),
+        'meta' => [
+            'total' => $personas->total(),
+            'current_page' => $personas->currentPage(),
+            'per_page' => $personas->perPage(),
+            'last_page' => $personas->lastPage(),
+        ]
+    ]);
+}
 
     public function agregarPersona(Request $request, $id)
 {
