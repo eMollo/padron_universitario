@@ -36,6 +36,6 @@ class PosiblesSheet implements FromCollection, WithHeadings
 
     public function headings(): array
     {
-        return ['DNI', 'Apellido', 'Nombre', 'Facultad', 'Claustro'];
+        return ['DNI', 'Apellido', 'Nombre', 'Unidad Electoral', 'Claustro'];
     }
 }
