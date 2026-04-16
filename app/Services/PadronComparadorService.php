@@ -39,7 +39,7 @@ class PadronComparadorService
         ];
     }
 
-    private function buscarDuplicadosPorDni(array $filters): array
+     private function buscarDuplicadosPorDni(array $filters): array
     {
         $anio = $filters['anio'];
         $mode = $filters['mode'] ?? 'global';
@@ -57,7 +57,6 @@ class PadronComparadorService
             DB::raw('COUNT(i.id) as cantidad')
         );
 
-        //  NUEVO MODE
         if ($mode === 'entre_claustros') {
             $c1 = (int)($filters['id_claustro_1'] ?? 0);
             $c2 = (int)($filters['id_claustro_2'] ?? 0);
@@ -80,6 +79,7 @@ class PadronComparadorService
             ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
             ->join('facultad as f', 'f.id', '=', 'pad.id_facultad')
             ->join('claustros as c', 'c.id', '=', 'pad.id_claustro')
+            ->join('sede as s', 's.id', '=', 'pad.id_sede')
             ->where('pad.anio', $anio)
             ->whereIn('p.dni_normalizado', $dniDuplicados)
             ->whereNull('i.deleted_at');
@@ -95,6 +95,7 @@ class PadronComparadorService
                 'i.id as inscripcion_id',
                 'f.sigla as facultad',
                 'c.nombre as claustro',
+                's.nombre as sede', 
                 'pad.anio'
             )
             ->orderBy('p.dni_normalizado')
@@ -127,7 +128,6 @@ class PadronComparadorService
         ->havingRaw('COUNT(DISTINCT p.id) > 1')
         ->havingRaw('COUNT(DISTINCT p.dni_normalizado) > 1');
 
-        // NUEVO MODE
         if ($mode === 'entre_claustros') {
             $c1 = (int)($filters['id_claustro_1'] ?? 0);
             $c2 = (int)($filters['id_claustro_2'] ?? 0);
@@ -141,6 +141,7 @@ class PadronComparadorService
             ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
             ->join('facultad as f', 'f.id', '=', 'pad.id_facultad')
             ->join('claustros as c', 'c.id', '=', 'pad.id_claustro')
+            ->join('sede as s', 's.id', '=', 'pad.id_sede') 
             ->joinSub($sub, 'dup', function ($join) {
                 $join->on(DB::raw('LOWER(TRIM(p.apellido))'), '=', 'dup.apellido_norm')
                      ->on(DB::raw('LOWER(TRIM(p.nombre))'), '=', 'dup.nombre_norm');
@@ -159,6 +160,7 @@ class PadronComparadorService
                 i.id as inscripcion_id,
                 f.sigla as facultad,
                 c.nombre as claustro,
+                s.nombre as sede,
                 pad.anio,
                 LOWER(TRIM(p.apellido)) as apellido_norm,
                 LOWER(TRIM(p.nombre)) as nombre_norm

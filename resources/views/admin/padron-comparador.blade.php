@@ -98,6 +98,7 @@ Exportar Excel
 <th>Apellido</th>
 <th>Nombre</th>
 <th>Unidad Electoral</th>
+<th>Sede</th>
 <th>Claustro</th>
 <th>Acción</th>
 </tr>
@@ -116,6 +117,7 @@ Exportar Excel
 <th>Apellido</th>
 <th>Nombre</th>
 <th>Unidad Electoral</th>
+<th>Sede</th>
 <th>Claustro</th>
 <th>Acción</th>
 </tr>
@@ -261,6 +263,7 @@ function renderExactos(grupos)
                 <td>${persona.apellido}</td>
                 <td>${persona.nombre}</td>
                 <td>${persona.facultad}</td>
+                <td>${persona.sede ?? ''}</td>
                 <td>${persona.claustro}</td>
                 <td>
                     <button onclick="darBaja(${persona.inscripcion_id})"
@@ -293,6 +296,7 @@ function renderPosibles(grupos)
                 <td>${persona.apellido}</td>
                 <td>${persona.nombre}</td>
                 <td>${persona.facultad}</td>
+                <td>${persona.sede ?? ''}</td>
                 <td>${persona.claustro}</td>
                 <td>
                     <button onclick="darBaja(${persona.inscripcion_id})"

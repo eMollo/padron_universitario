@@ -5,8 +5,9 @@ namespace App\Exports;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class PosiblesSheet implements FromCollection, WithHeadings
+class PosiblesSheet implements FromCollection, WithHeadings, WithTitle
 {
     protected array $data;
 
@@ -26,6 +27,7 @@ class PosiblesSheet implements FromCollection, WithHeadings
                     $persona->apellido,
                     $persona->nombre,
                     $persona->facultad,
+                    $persona->sede,
                     $persona->claustro,
                 ]);
             }
@@ -36,6 +38,11 @@ class PosiblesSheet implements FromCollection, WithHeadings
 
     public function headings(): array
     {
-        return ['DNI', 'Apellido', 'Nombre', 'Unidad Electoral', 'Claustro'];
+        return ['DNI', 'Apellido', 'Nombre', 'Unidad Electoral','Sede', 'Claustro'];
+    }
+
+    public function title(): string
+    {
+        return 'POSIBLES';
     }
 }
