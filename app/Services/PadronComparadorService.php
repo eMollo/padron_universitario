@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 
 use InvalidArgumentException;
 
+
+
 class PadronComparadorService
 {
     public function comparar(array $filters): array
@@ -39,7 +41,9 @@ class PadronComparadorService
         ];
     }
 
-     private function buscarDuplicadosPorDni(array $filters): array
+    // DUPLICADOS POR DNI
+
+    private function buscarDuplicadosPorDni(array $filters): array
     {
         $anio = $filters['anio'];
         $mode = $filters['mode'] ?? 'global';
@@ -57,12 +61,26 @@ class PadronComparadorService
             DB::raw('COUNT(i.id) as cantidad')
         );
 
+
         if ($mode === 'entre_claustros') {
             $c1 = (int)($filters['id_claustro_1'] ?? 0);
             $c2 = (int)($filters['id_claustro_2'] ?? 0);
 
             $sub->havingRaw("SUM(CASE WHEN pad.id_claustro = $c1 THEN 1 ELSE 0 END) > 0");
             $sub->havingRaw("SUM(CASE WHEN pad.id_claustro = $c2 THEN 1 ELSE 0 END) > 0");
+        }
+
+        if ($mode === 'facultad_vs_resto') {
+
+            $facultad = (int)($filters['id_facultad'] ?? 0);
+
+            $sub->havingRaw("
+                SUM(CASE WHEN pad.id_facultad = $facultad THEN 1 ELSE 0 END) > 0
+            ");
+
+            $sub->havingRaw("
+                SUM(CASE WHEN pad.id_facultad <> $facultad THEN 1 ELSE 0 END) > 0
+            ");
         }
 
         $sub->groupBy('p.dni_normalizado')
@@ -95,7 +113,7 @@ class PadronComparadorService
                 'i.id as inscripcion_id',
                 'f.sigla as facultad',
                 'c.nombre as claustro',
-                's.nombre as sede', 
+                's.nombre as sede',
                 'pad.anio'
             )
             ->orderBy('p.dni_normalizado')
@@ -104,6 +122,8 @@ class PadronComparadorService
             ->values()
             ->toArray();
     }
+
+    // POSIBLES DUPLICADOS
 
     private function buscarPosiblesDuplicados(array $filters): array
     {
@@ -136,12 +156,25 @@ class PadronComparadorService
             $sub->havingRaw("SUM(CASE WHEN pad.id_claustro = $c2 THEN 1 ELSE 0 END) > 0");
         }
 
+        if ($mode === 'facultad_vs_resto') {
+
+            $facultad = (int)($filters['id_facultad'] ?? 0);
+
+            $sub->havingRaw("
+                SUM(CASE WHEN pad.id_facultad = $facultad THEN 1 ELSE 0 END) > 0
+            ");
+
+            $sub->havingRaw("
+                SUM(CASE WHEN pad.id_facultad <> $facultad THEN 1 ELSE 0 END) > 0
+            ");
+        }
+
         $query = DB::table('personas as p')
             ->join('inscripciones as i', 'i.id_persona', '=', 'p.id')
             ->join('padrones as pad', 'pad.id', '=', 'i.id_padron')
             ->join('facultad as f', 'f.id', '=', 'pad.id_facultad')
             ->join('claustros as c', 'c.id', '=', 'pad.id_claustro')
-            ->join('sede as s', 's.id', '=', 'pad.id_sede') 
+            ->join('sede as s', 's.id', '=', 'pad.id_sede')
             ->joinSub($sub, 'dup', function ($join) {
                 $join->on(DB::raw('LOWER(TRIM(p.apellido))'), '=', 'dup.apellido_norm')
                      ->on(DB::raw('LOWER(TRIM(p.nombre))'), '=', 'dup.nombre_norm');
@@ -172,6 +205,8 @@ class PadronComparadorService
             ->toArray();
     }
 
+    // MODES
+
     private function aplicarMode($query, string $mode, array $filters): void
     {
         switch ($mode) {
@@ -188,7 +223,7 @@ class PadronComparadorService
                 }
                 break;
 
-            case 'entre_claustros': // NUEVO
+            case 'entre_claustros':
                 if (!empty($filters['id_claustro_1']) && !empty($filters['id_claustro_2'])) {
                     $query->whereIn('pad.id_claustro', [
                         $filters['id_claustro_1'],
@@ -198,6 +233,9 @@ class PadronComparadorService
                 break;
 
             case 'facultad_vs_resto':
+                
+                break;
+
             case 'global':
             default:
                 break;
