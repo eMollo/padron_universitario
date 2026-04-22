@@ -44,7 +44,7 @@ public function export($id)
         $sede     = $limpiar($padron->sede->nombre ?? 'SinSede');
         $anio     = $padron->anio ?? 'SinAnio';
 
-        $filename = "{$facultad}_{$claustro}_{$sede}_{$anio}.xlsx";
+        $filename = "PADRON OFICIALIZADO {$anio} DE {$facultad}_{$claustro}_{$sede}.xlsx";
 
         return Excel::download(
             new PadronExport($padron),
