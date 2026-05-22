@@ -92,7 +92,7 @@ class InscripcionController extends Controller
             'legajo' => 'nullable|string|max:50',
         ]);
 
-        $inscripcion = Inscripcion::findOrFail($id);
+        $inscripcion = Inscripcion::findOrFail($id); //Evita que se modifique una inscripción dada de baja
 
         $inscripcion->update([
             'legajo' => $data['legajo'],
