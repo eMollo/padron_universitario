@@ -135,7 +135,7 @@ class ListaValidationService
 
         if (!empty($payload['apoderado']['dni'])) {
 
-            $apo = Persona::where('dni', $payload['apoderado']['dni'])->first();               //ESTO PUEDE CAMBIAR, SI NO EXISTE LA PERSONA SE CREA
+            /*$apo = Persona::where('dni', $payload['apoderado']['dni'])->first();               //ESTO PUEDE CAMBIAR, SI NO EXISTE LA PERSONA SE CREA
 
             if (!$apo) {
                 $errors['apoderado'][] = [
@@ -148,7 +148,21 @@ class ListaValidationService
                     'dni' => $apo->dni,
                     'nombre' => "{$apo->apellido}, {$apo->nombre}",
                 ];
-            }
+            }*/
+
+            $apo = Persona::firstOrCreate(
+                //CONDICIÓN DE BUSQUEDA
+                ['dni' => $payload['apoderado']['dni']],
+
+                //DATOS ADICIONALES PARA LA CREACIÓN (SOLO SE USAN SI EL DNI NO APARECE)
+                [
+                    'nombre'   => $payload['apoderado']['nombre'] ?? null,
+                    'apellido' => $payload['apoderado']['apellido'] ?? null,
+                    'email'    => $payload['apoderado']['email'] ?? null,
+                    'telefono' => $payload['apoderado']['telefono'] ?? null,
+                ]
+            );
+
         }                                                                                       //HASTA ACÁ
 
         $result = $this->validarPostulantes(
