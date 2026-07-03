@@ -45,6 +45,19 @@ class ListaCreationService
 
                 $numero = $this->numberService->nextNumber($anio, $tipo, $id_claustro);
 
+                $existe = Lista::where('anio', $anio)
+                    ->where('tipo', $tipo)
+                    ->where('numero', $numero)
+                    ->when(
+                        in_array($tipo, ['superior', 'directivo']),
+                        fn($q) => $q->where('id_claustro', $id_claustro)
+                    )
+                    ->exists();
+
+                if($existe) {
+                    throw new \Exception('Número de lista ya utilizado');
+                }
+
                 $lista = Lista::create([
                     'anio' => $anio,
                     'tipo' => $tipo,

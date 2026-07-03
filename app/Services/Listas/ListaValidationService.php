@@ -56,7 +56,7 @@ class ListaValidationService
         //si existe la clave '*' (aplica a todos)
         if (isset($this->reglas[$tipo]['*'])) {
             [$t,$s] = $this->reglas[$tipo]['*'];
-            return ['min_titulares'=>1, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
+            return ['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
         }
 
         if (!$claustroNombre) {
@@ -66,7 +66,7 @@ class ListaValidationService
         $cn = mb_strtolower($claustroNombre);
         foreach ($this->reglas[$tipo] as $clave => [$t,$s]) {
             if (mb_strpos($cn, $clave) !== false) {
-                return['min_titulares'=>1, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
+                return['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
             }
         }
 
@@ -118,11 +118,13 @@ class ListaValidationService
         //chequear counts mínimos/máximos
         $cant = count($titulares);
         $cantS = count($suplentes);
+        // if ($cant != $rules['max_titulares']) {}
         if (count($titulares) < $rules['min_titulares'] || count($titulares) > $rules['max_titulares']) {
             $errors[] = [
                 'message' => "Cantidad de titulares debe ser entre {$rules['min_titulares']} y {$rules['max_titulares']}",
             ];
         }
+        // if ($cantS < $rules['min_suplentes'] || $cantS > $rules['max_suplentes'])
         if (count($suplentes) < $rules['min_suplentes'] || count($suplentes) > $rules['max_suplentes']) {
             $errors[] = [
                 'message' => "Cantidad de suplentes debe ser entre {$rules['min_suplentes']} y {$rules['max_suplentes']}",
