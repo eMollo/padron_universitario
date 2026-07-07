@@ -75,6 +75,13 @@ Salir
     </li>
 
     <li class="nav-item">
+        <a href="/listas" class="nav-link">
+            <i class="bi bi-card-list"></i>
+            Listas
+        </a>
+    </li>
+
+    <li class="nav-item">
         <a href="/admin/comparador/bajas" class="nav-link">
             Inscripciones dadas de baja
         </a>

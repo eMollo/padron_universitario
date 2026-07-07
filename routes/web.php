@@ -18,6 +18,7 @@ use App\Http\Controllers\AvalController;
 use App\Http\Controllers\PadronMetricasController;
 use App\Services\PadronResumenService;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ListaViewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,22 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/metricas', [PadronMetricasController::class, 'index']);
     Route::get('/padrones/metricas', fn() => view('padrones.metricas'));
     Route::post('/api/metricas/recalcular', [PadronMetricasController::class, 'recalcular']);
+
+    //LISTAS
+    Route::get('/listas', [ListaViewController::class, 'index'])
+        ->name('listas.index');
+
+    Route::get('/listas/crear', [ListaViewController::class, 'crear'])
+        ->name('listas.crear');
+
+    Route::get('/listas/{id}', [ListaViewController::class, 'ver'])
+        ->whereNumber('id')
+        ->name('listas.ver');
+
+    Route::get('/listas/{id}/editar', [ListaViewController::class, 'editar'])
+        ->whereNumber('id')
+        ->name('listas.editar');
+
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
