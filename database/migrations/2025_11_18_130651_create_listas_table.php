@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('estado_lista')->default('cargada'); //avales_faltantes , oficializada
             $table->timestamps();
 
-            $table->unique(['anio', 'tipo', 'numero', 'id_claustro']);
+            //$table->unique(['anio', 'tipo', 'numero', 'id_claustro']);
         });
     }
 
