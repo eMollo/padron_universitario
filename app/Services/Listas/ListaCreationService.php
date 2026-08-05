@@ -21,6 +21,10 @@ class ListaCreationService
         $payload =[
             'anio' => $request['anio'],
             'tipo' => $request['tipo'],
+
+            'modo_carga' => $request['modo_carga'] ?? 'normal',
+            'numero' => $request['numero'] ?? null,
+
             'id_claustro' => $request['id_claustro'] ?? null,
             'id_facultad' => $request['id_facultad'] ?? null,
             'apoderado' => $request['apoderado'] ?? [],
@@ -29,7 +33,7 @@ class ListaCreationService
 
         $validation = $this->validationService->validateAll($payload);
 
-        if ($validation['ok']) {
+        if (!$validation['ok']) {
             return [
                 'ok' => false,
                 'status' => 422,
@@ -44,9 +48,33 @@ class ListaCreationService
             $lista = DB::transaction(function () use(
                 $request, $payload, $validation, $apoderado
             ){
-                $numero = $this->numberService->nextNumber(
-                    $payload['anio'], $payload['tipo'], $payload['id_claustro']
-                );
+                if ($payload['modo_carga'] === 'historica') {
+                    if (empty($payload['numero'])) {
+                        throw new \InvalidArgumentException('Debe indicar el número de lista para una carga histórica.');
+                    }
+
+                    $numero = $payload['numero'];
+
+                    //Verificar que el numero no exista
+                    $existe = Lista::where('anio', $payload['anio'])
+                        ->where('tipo', $payload['tipo'])
+                        ->where('numero', $numero)
+                        ->when(
+                            in_array($payload['tipo'], ['superior', 'directivo']),
+                            fn($q) => $q->where('id_claustro', $payload['id_claustro']),
+                        ) -> exists();
+
+                    if ($existe){
+                        throw new \RuntimeException("El número de lista {$numero} ya está utilizado para el año {$payload['anio']} y el tipo {$payload['tipo']}");
+                    }
+
+                } else {
+
+                    $numero = $this->numberService->nextNumber(
+                        $payload['anio'], $payload['tipo'], $payload['id_claustro']
+                    );
+
+                }
 
                 $lista = Lista::create([
                     'anio' => $payload['anio'],
@@ -54,6 +82,7 @@ class ListaCreationService
                     'nombre' => $request['nombre'],
                     'sigla' => $request['sigla'] ?? null,
                     'numero' => $numero,
+                    'modo_carga' => $payload['modo_carga'],
                     'id_facultad' => $payload['id_facultad'],
                     'id_claustro' => $payload['id_claustro'],
                     'id_apoderado' => $apoderado->id,
