@@ -20,7 +20,7 @@ class ListaController extends Controller
 {
     protected ListaCreationService $creationService;
 
-    public function __construct(ListaCreatcionService $creationService){
+    public function __construct(ListaCreationService $creationService){
         $this->creationService = $creationService;
     }
 
@@ -61,7 +61,7 @@ class ListaController extends Controller
     public function store(Request $request): JsonResponse {
         $request->validate([
             'anio' => 'required|integer',
-            'tipo' => ['required', 'strin', Rule::in(['superior','directivo','decano','rector'])],
+            'tipo' => ['required', 'string', Rule::in(['superior','directivo','decano','rector'])],
             'nombre' => 'required|string|max:90',
             'sigla' => 'nullable|string|max:10',
 

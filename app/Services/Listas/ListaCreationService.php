@@ -42,39 +42,14 @@ class ListaCreationService
             ];
         }
 
-        $apoderado = $this->crearActualizarApoderado($payload['apoderado']);
-
         try{
             $lista = DB::transaction(function () use(
                 $request, $payload, $validation, $apoderado
             ){
-                if ($payload['modo_carga'] === 'historica') {
-                    if (empty($payload['numero'])) {
-                        throw new \InvalidArgumentException('Debe indicar el número de lista para una carga histórica.');
-                    }
 
-                    $numero = $payload['numero'];
+                $apoderado = $this->crearActualizarApoderado($payload['apoderado']);
 
-                    //Verificar que el numero no exista
-                    $existe = Lista::where('anio', $payload['anio'])
-                        ->where('tipo', $payload['tipo'])
-                        ->where('numero', $numero)
-                        ->when(
-                            in_array($payload['tipo'], ['superior', 'directivo']),
-                            fn($q) => $q->where('id_claustro', $payload['id_claustro']),
-                        ) -> exists();
-
-                    if ($existe){
-                        throw new \RuntimeException("El número de lista {$numero} ya está utilizado para el año {$payload['anio']} y el tipo {$payload['tipo']}");
-                    }
-
-                } else {
-
-                    $numero = $this->numberService->nextNumber(
-                        $payload['anio'], $payload['tipo'], $payload['id_claustro']
-                    );
-
-                }
+                $numero = $this->obtenerNumeroLista($payload);
 
                 $lista = Lista::create([
                     'anio' => $payload['anio'],
@@ -110,7 +85,21 @@ class ListaCreationService
                     'claustro'
                 ])
             ];
-        }catch (\Throwable $e) {
+        }
+        catch (\Illuminate\Database\QueryException $e) {
+            //PostgreSQL UNIQUE VIOLATION
+            if ($e->getCode() === '23505') {
+                return [
+                    'ok' => false,
+                    'status' => 422,
+                    'error' => 'El número de lista ya existe.',
+                    'details' => []
+                ];
+            }
+            throw $e;
+        }
+        
+        catch (\Throwable $e) {
             return [
                 'ok' => false,
                 'status' => 500,
@@ -134,6 +123,50 @@ class ListaCreationService
         $persona->save();
 
         return $persona;
+    }
+
+    private function obtenerNumeroLista(array $payload): int {
+
+        if ($payload['modo_carga'] === 'normal' && $payload['numero' !== null]) {
+            throw new InvalidArgumentException(
+                'No debe enviar número de lista en modo normal.'
+            );
+        }
+
+    //CARGA HISTORICA
+        if ($payload['modo_carga'] === 'historica') {
+
+            if ($payload['numero'] === null) {
+                throw new \InvalidArgumentException(
+                    'Debe indicar el número de lista.'
+                );
+            }
+
+            $numero = (int) $payload['numero'];
+
+            $query = Lista::where('anio', $payload['anio'])
+                ->where('tipo', $payload['tipo'])
+                ->where('numero', $numero);
+
+            if (in_array($payload['tipo'], ['superior', 'directivo'])) {
+                $query->where('id_claustro', $payload['id_claustro']);
+            }
+
+            if ($query->exists()) {
+                throw new \RuntimeException(
+                    "El número {$numero} ya está utilizado."
+                );
+            }
+
+            return $numero;
+        }
+
+        //NUMERACION AUTOMATICA
+        return $this->numberService->nextNumber(
+            $payload['anio'],
+            $payload['tipo'],
+            $payload['id_claustro']
+        );
     }
     
 }
