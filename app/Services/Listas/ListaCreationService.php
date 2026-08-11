@@ -44,7 +44,7 @@ class ListaCreationService
 
         try{
             $lista = DB::transaction(function () use(
-                $request, $payload, $validation, $apoderado
+                $request, $payload, $validation
             ){
 
                 $apoderado = $this->crearActualizarApoderado($payload['apoderado']);
@@ -98,6 +98,24 @@ class ListaCreationService
             }
             throw $e;
         }
+
+        catch (\InvalidArgumentException $e) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'error' => $e->getMessage(),
+                'details' => []
+            ];
+        }
+
+        catch (\RuntimeException $e) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'error' => $e->getMessage(),
+                'details' => []
+            ];
+        }
         
         catch (\Throwable $e) {
             return [
@@ -127,7 +145,7 @@ class ListaCreationService
 
     private function obtenerNumeroLista(array $payload): int {
 
-        if ($payload['modo_carga'] === 'normal' && $payload['numero' !== null]) {
+        if ($payload['modo_carga'] === 'normal' && $payload['numero'] !== null) {
             throw new InvalidArgumentException(
                 'No debe enviar número de lista en modo normal.'
             );
