@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('lista_postulantes', function (Blueprint $table) {
-            table->unique(
+            $table->unique(
                 ['id_lista', 'tipo', 'orden'],
                 'lista_tipo_orden_unico'
             );
