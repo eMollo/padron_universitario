@@ -12,6 +12,12 @@ class ListaPostulante extends Model
     protected $table = 'lista_postulantes';
 
     protected $fillable = ['id_lista', 'id_persona', 'tipo', 'orden', 'legajo'];
+
+    protected $casts = [
+        'id_lista' => 'integer',
+        'id_persona' => 'integer',
+        'orden' => 'integer'
+    ];
     
     public function persona()
     {
@@ -21,6 +27,18 @@ class ListaPostulante extends Model
     public function lista()
     {
         return $this->belongsTo(Lista::class, 'id_lista');
+    }
+
+    public function scopeTitulares($query) {
+        return $query
+            ->where('tipo', 'titular')
+            ->orderBy('orden');
+    }
+
+    public function scopeSuplentes($query) {
+        return $query
+            ->where('tipo', 'suplente')
+            ->orderBy('orden');
     }
 
 }

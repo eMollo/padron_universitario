@@ -133,40 +133,7 @@ class ListaValidationService
 
         if (!empty($errors)) return ['ok'=>false,'errors'=>$errors,'postulantes'=>[]];
 
-        //VERIFICAR APODERADO
-
-        if (!empty($payload['apoderado']['dni'])) {
-
-            /*$apo = Persona::where('dni', $payload['apoderado']['dni'])->first();               //ESTO PUEDE CAMBIAR, SI NO EXISTE LA PERSONA SE CREA
-
-            if (!$apo) {
-                $errors['apoderado'][] = [
-                    'message' => 'El apoderado no existe en el sistema',
-                    'dni' => $payload['apoderado']['dni'],
-                ];
-            } elseif (!$this->personaEstaEnPadron($apo, $tipo, $anio, $id_claustro, $payload)) {
-                $errors['apoderado'][] = [
-                    'message' => 'El apoderado no pertenece al padrón correspondiente',
-                    'dni' => $apo->dni,
-                    'nombre' => "{$apo->apellido}, {$apo->nombre}",
-                ];
-            }*/
-
-            $apo = Persona::firstOrCreate(
-                //CONDICIÓN DE BUSQUEDA
-                ['dni' => $payload['apoderado']['dni']],
-
-                //DATOS ADICIONALES PARA LA CREACIÓN (SOLO SE USAN SI EL DNI NO APARECE)
-                [
-                    'nombre'   => $payload['apoderado']['nombre'] ?? null,
-                    'apellido' => $payload['apoderado']['apellido'] ?? null,
-                    'email'    => $payload['apoderado']['email'] ?? null,
-                    'telefono' => $payload['apoderado']['telefono'] ?? null,
-                ]
-            );
-
-        }                                                                                       //HASTA ACÁ
-
+        
         $result = $this->validarPostulantes(
         $payload['postulantes'],
         $tipo,
@@ -193,7 +160,6 @@ class ListaValidationService
     *
     * Reglas:
     * - DNI siempre obligatorio
-    * - Legajo obligatorio solo para superior (salvo graduados) y directivo
     * - Apellido y nombre se ignoran (solo frontend)
     * - Si un postulante es inválido → falla toda la lista
     *
@@ -302,6 +268,21 @@ class ListaValidationService
                                     ? $data['legajo']
                                     : null,
                 ];
+
+                
+                if (in_array($persona->id, $postulantesIds, true)) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'El postulante aparece más de una vez en la lista.',
+                            'dni' => $persona->dni,
+                            'nombre' =>  "{$persona->apellido}, {$persona->nombre}",
+                            'rol' => $rol,
+                            'orden' => $index + 1,
+                        ]],
+                        'postulantes' => []
+                    ];
+                }
 
                 $postulantesIds[] = $persona->id;
             }
