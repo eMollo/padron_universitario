@@ -16,7 +16,7 @@ return new class extends Migration
 
         DB::statement("
             CREATE UNIQUE INDEX uq_listas_numero_por_claustro
-            ON listas (anio, tipom id_claustro, numero)
+            ON listas (anio, tipo, id_claustro, numero)
             WHERE tipo IN ('superior', 'directivo');");
         
         //RECTOR Y DECANO

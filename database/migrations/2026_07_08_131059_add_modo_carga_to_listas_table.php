@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('listas', function (Blueprint $table) {
             
-            table->enum('modo_carga', [
+            $table->enum('modo_carga', [
                 'normal',
                 'historica'
             ])
