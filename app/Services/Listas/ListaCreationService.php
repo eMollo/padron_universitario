@@ -146,7 +146,7 @@ class ListaCreationService
     private function obtenerNumeroLista(array $payload): int {
 
         if ($payload['modo_carga'] === 'normal' && $payload['numero'] !== null) {
-            throw new InvalidArgumentException(
+            throw new \InvalidArgumentException(
                 'No debe enviar número de lista en modo normal.'
             );
         }
