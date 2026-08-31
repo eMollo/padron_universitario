@@ -56,7 +56,7 @@ class ListaValidationService
         //si existe la clave '*' (aplica a todos)
         if (isset($this->reglas[$tipo]['*'])) {
             [$t,$s] = $this->reglas[$tipo]['*'];
-            return ['min_titulares'=>1, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
+            return ['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
         }
 
         if (!$claustroNombre) {
@@ -66,7 +66,7 @@ class ListaValidationService
         $cn = mb_strtolower($claustroNombre);
         foreach ($this->reglas[$tipo] as $clave => [$t,$s]) {
             if (mb_strpos($cn, $clave) !== false) {
-                return['min_titulares'=>1, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
+                return['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
             }
         }
 
@@ -118,11 +118,13 @@ class ListaValidationService
         //chequear counts mínimos/máximos
         $cant = count($titulares);
         $cantS = count($suplentes);
+        // if ($cant != $rules['max_titulares']) {}
         if (count($titulares) < $rules['min_titulares'] || count($titulares) > $rules['max_titulares']) {
             $errors[] = [
                 'message' => "Cantidad de titulares debe ser entre {$rules['min_titulares']} y {$rules['max_titulares']}",
             ];
         }
+        // if ($cantS < $rules['min_suplentes'] || $cantS > $rules['max_suplentes'])
         if (count($suplentes) < $rules['min_suplentes'] || count($suplentes) > $rules['max_suplentes']) {
             $errors[] = [
                 'message' => "Cantidad de suplentes debe ser entre {$rules['min_suplentes']} y {$rules['max_suplentes']}",
@@ -131,26 +133,7 @@ class ListaValidationService
 
         if (!empty($errors)) return ['ok'=>false,'errors'=>$errors,'postulantes'=>[]];
 
-        //VERIFICAR APODERADO
-
-        if (!empty($payload['apoderado']['dni'])) {
-
-            $apo = Persona::where('dni', $payload['apoderado']['dni'])->first();               //ESTO PUEDE CAMBIAR, SI NO EXISTE LA PERSONA SE CREA
-
-            if (!$apo) {
-                $errors['apoderado'][] = [
-                    'message' => 'El apoderado no existe en el sistema',
-                    'dni' => $payload['apoderado']['dni'],
-                ];
-            } elseif (!$this->personaEstaEnPadron($apo, $tipo, $anio, $id_claustro, $payload)) {
-                $errors['apoderado'][] = [
-                    'message' => 'El apoderado no pertenece al padrón correspondiente',
-                    'dni' => $apo->dni,
-                    'nombre' => "{$apo->apellido}, {$apo->nombre}",
-                ];
-            }
-        }                                                                                       //HASTA ACÁ
-
+        
         $result = $this->validarPostulantes(
         $payload['postulantes'],
         $tipo,
@@ -177,7 +160,6 @@ class ListaValidationService
     *
     * Reglas:
     * - DNI siempre obligatorio
-    * - Legajo obligatorio solo para superior (salvo graduados) y directivo
     * - Apellido y nombre se ignoran (solo frontend)
     * - Si un postulante es inválido → falla toda la lista
     *
@@ -286,6 +268,21 @@ class ListaValidationService
                                     ? $data['legajo']
                                     : null,
                 ];
+
+                
+                if (in_array($persona->id, $postulantesIds, true)) {
+                    return [
+                        'ok' => false,
+                        'errors' => [[
+                            'message' => 'El postulante aparece más de una vez en la lista.',
+                            'dni' => $persona->dni,
+                            'nombre' =>  "{$persona->apellido}, {$persona->nombre}",
+                            'rol' => $rol,
+                            'orden' => $index + 1,
+                        ]],
+                        'postulantes' => []
+                    ];
+                }
 
                 $postulantesIds[] = $persona->id;
             }

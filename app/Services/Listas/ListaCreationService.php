@@ -10,53 +10,60 @@ use Illuminate\Support\Facades\DB;
 class ListaCreationService
 {
     protected ListaNumberService $numberService;
-    
-    /**
-     * Create a new class instance.
-     */
-    public function __construct(ListaNumberService $numberService)
-    {
+    protected ListaValidationService $validationService;
+
+    public function __construct(ListaNumberService $numberService, ListaValidationService $validationService) {
         $this->numberService = $numberService;
+        $this->validationService = $validationService;
     }
 
-    /**
-     * Crea lista y postulantes dentro de transacción.
-     *
-     * $data array esperado:
-     *  - anio, tipo, nombre, sigla, id_facultad (nullable), id_claustro (nullable), id_apoderado
-     *  - postulantes => array of items ['persona' => Persona, 'tipo'=>'titular'|'suplente', 'orden'=>int, 'legajo'=>string|null]
-     *
-     * Devuelve ['ok'=>true,'lista'=>$lista] or ['ok'=>false,'error'=>...]
-     */
-    public function create(array $data): array
-    {
-        $anio = $data['anio'];
-        $tipo = $data['tipo'];
-        $nombre = $data['nombre'];
-        $sigla = $data['sigla'] ?? null;
-        $id_facultad = $data['id_facultad'] ?? null;
-        $id_claustro = $data['id_claustro'] ?? null;
-        $id_apoderado = $data['id_apoderado'];
+    public function create(array $request): array {
+        $payload =[
+            'anio' => $request['anio'],
+            'tipo' => $request['tipo'],
 
-        $postulantes = $data['postulantes'] ?? [];
+            'modo_carga' => $request['modo_carga'] ?? 'normal',
+            'numero' => $request['numero'] ?? null,
 
-        try {
-            $result = DB::transaction(function () use ($anio,$tipo,$nombre,$sigla,$id_facultad,$id_claustro,$id_apoderado,$postulantes) {
+            'id_claustro' => $request['id_claustro'] ?? null,
+            'id_facultad' => $request['id_facultad'] ?? null,
+            'apoderado' => $request['apoderado'] ?? [],
+            'postulantes' => $request['postulantes'] ?? [],
+        ];
 
-                $numero = $this->numberService->nextNumber($anio, $tipo, $id_claustro);
+        $validation = $this->validationService->validateAll($payload);
+
+        if (!$validation['ok']) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'error' => 'Validación de lista fallida',
+                'details' => $validation['errors']
+            ];
+        }
+
+        try{
+            $lista = DB::transaction(function () use(
+                $request, $payload, $validation
+            ){
+
+                $apoderado = $this->crearActualizarApoderado($payload['apoderado']);
+
+                $numero = $this->obtenerNumeroLista($payload);
 
                 $lista = Lista::create([
-                    'anio' => $anio,
-                    'tipo' => $tipo,
-                    'nombre' => $nombre,
-                    'sigla' => $sigla,
+                    'anio' => $payload['anio'],
+                    'tipo' => $payload['tipo'],
+                    'nombre' => $request['nombre'],
+                    'sigla' => $request['sigla'] ?? null,
                     'numero' => $numero,
-                    'id_facultad' => $id_facultad,
-                    'id_claustro' => $id_claustro,
-                    'id_apoderado' => $id_apoderado,
+                    'modo_carga' => $payload['modo_carga'],
+                    'id_facultad' => $payload['id_facultad'],
+                    'id_claustro' => $payload['id_claustro'],
+                    'id_apoderado' => $apoderado->id,
                 ]);
 
-                foreach ($postulantes as $p) {
+                foreach ($validation['postulantes'] as $p){
                     ListaPostulante::create([
                         'id_lista' => $lista->id,
                         'id_persona' => $p['persona']->id,
@@ -69,9 +76,115 @@ class ListaCreationService
                 return $lista;
             });
 
-            return ['ok'=>true, 'lista'=>$result];
-        }catch (\Throwable $e) {
-            return ['ok'=>false, 'error'=>$e->getMessage()];
+            return [
+                'ok' => true,
+                'lista' => $lista->load([
+                    'apoderado',
+                    'postulantes.persona',
+                    'facultad',
+                    'claustro'
+                ])
+            ];
+        }
+        catch (\Illuminate\Database\QueryException $e) {
+            //PostgreSQL UNIQUE VIOLATION
+            if ($e->getCode() === '23505') {
+                return [
+                    'ok' => false,
+                    'status' => 422,
+                    'error' => 'El número de lista ya existe.',
+                    'details' => []
+                ];
+            }
+            throw $e;
+        }
+
+        catch (\InvalidArgumentException $e) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'error' => $e->getMessage(),
+                'details' => []
+            ];
+        }
+
+        catch (\RuntimeException $e) {
+            return [
+                'ok' => false,
+                'status' => 422,
+                'error' => $e->getMessage(),
+                'details' => []
+            ];
+        }
+        
+        catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'status' => 500,
+                'error' => 'No se pudo crear la lista',
+                'details' => $e->getMessage()
+            ];
         }
     }
+
+    //CREA O ACTUALIZA EL APODERADO
+    private function crearActualizarApoderado(array $datos): Persona {
+        $persona = Persona::firstOrNew([
+            'dni' => $datos['dni']
+        ]);
+
+        $persona->nombre = $datos['nombre'];
+        $persona->apellido = $datos['apellido'];
+        $persona->telefono = $datos['telefono'] ?? null;
+        $persona->email = $datos['email'] ?? null;
+
+        $persona->save();
+
+        return $persona;
+    }
+
+    private function obtenerNumeroLista(array $payload): int {
+
+        if ($payload['modo_carga'] === 'normal' && $payload['numero'] !== null) {
+            throw new \InvalidArgumentException(
+                'No debe enviar número de lista en modo normal.'
+            );
+        }
+
+    //CARGA HISTORICA
+        if ($payload['modo_carga'] === 'historica') {
+
+            if ($payload['numero'] === null) {
+                throw new \InvalidArgumentException(
+                    'Debe indicar el número de lista.'
+                );
+            }
+
+            $numero = (int) $payload['numero'];
+
+            $query = Lista::where('anio', $payload['anio'])
+                ->where('tipo', $payload['tipo'])
+                ->where('numero', $numero);
+
+            if (in_array($payload['tipo'], ['superior', 'directivo'])) {
+                $query->where('id_claustro', $payload['id_claustro']);
+            }
+
+            if ($query->exists()) {
+                throw new \RuntimeException(
+                    "El número {$numero} ya está utilizado."
+                );
+            }
+
+            return $numero;
+        }
+
+        //NUMERACION AUTOMATICA
+        return $this->numberService->nextNumber(
+            $payload['anio'],
+            $payload['tipo'],
+            $payload['id_claustro']
+        );
+    }
+    
 }

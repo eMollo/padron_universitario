@@ -11,7 +11,7 @@ class Lista extends Model
 
     protected $table = 'listas';
 
-    protected $fillable = ['anio', 'tipo', 'nombre', 'sigla', 'numero', 'id_facultad', 'id_claustro', 'id_apoderado'];
+    protected $fillable = ['anio', 'tipo', 'nombre', 'sigla', 'numero', 'modo_carga', 'id_facultad', 'id_claustro', 'id_apoderado'];
 
     public function apoderado() 
     {

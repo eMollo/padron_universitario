@@ -8,7 +8,24 @@ class ListaNumberService
 {
     public function nextNumber(int $anio, string $tipo, ?int $id_claustro): int
     {
+
         $query = Lista::where('anio', $anio)
+            ->where('tipo', $tipo);
+
+        switch ($tipo) {
+            case 'superior':
+            case 'directivo':
+                $query->where('id_claustro', $id_claustro);
+                break;
+            case 'decano':
+            case 'rector':
+                break;
+        }
+
+        $ultimo = $query->max('numero');
+
+        return ($ultimo ?? 0) + 1;
+        /*$query = Lista::where('anio', $anio)
             ->where('tipo', $tipo);
 
         if (in_array($tipo, ['superior', 'directivo'])){
@@ -20,7 +37,7 @@ class ListaNumberService
 
         $ultimo = $query->max('numero');
 
-        return ($ultimo ?? 0) + 1;
+        return ($ultimo ?? 0) + 1;*/
         /*$ultimo = Lista::where('anio', $anio)
             ->where('tipo', $tipo)
             ->where('id_claustro', $id_claustro)
