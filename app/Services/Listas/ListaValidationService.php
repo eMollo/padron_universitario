@@ -356,7 +356,7 @@ class ListaValidationService
             'superior'  => $padronQuery->where('id_claustro', $id_claustro),
             'directivo' => $padronQuery->where('id_claustro', $id_claustro)
                                         ->where('id_facultad', $payload['id_facultad']),
-            'decano'    => null,
+            'decano'    => $padronQuery->where('id_facultad', $payload['id_facultad']),
             'rector'    => null, // Solo anio
         };
 
