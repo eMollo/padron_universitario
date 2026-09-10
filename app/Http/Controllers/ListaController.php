@@ -32,7 +32,11 @@ class ListaController extends Controller
             'postulantes.persona',
             'facultad',
             'claustro'
-        ])->get();
+        ])
+        ->orderByDesc('anio')
+        ->orderBy('tipo')
+        ->orderBy('numero')
+        ->get();
 
         return response()->json($listas);
     }
@@ -63,7 +67,7 @@ class ListaController extends Controller
             'anio' => 'required|integer',
             'tipo' => ['required', 'string', Rule::in(['superior','directivo','decano','rector'])],
             'nombre' => 'required|string|max:90',
-            'sigla' => 'nullable|string|max:10',
+            'sigla' => 'nullable|string|max:13',
 
             'modo_carga' => ['nullable', 'string', Rule::in(['normal', 'historica'])],
             'numero' => 'nullable|integer|min:1',
@@ -76,6 +80,8 @@ class ListaController extends Controller
             'apoderado.dni' => 'required|string',
             'apoderado.nombre' => 'required|string',
             'apoderado.apellido' => 'required|string',
+            'apoderado.telefono' => 'nullable|string',
+            'apoderado.email' => 'nullable|email',
 
             'postulantes.titulares' => 'required|array',
             'postulantes.titulares.*.dni' => 'required|string',
