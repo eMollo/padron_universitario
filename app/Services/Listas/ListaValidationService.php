@@ -15,13 +15,13 @@ class ListaValidationService
     protected array $reglas = [
         'superior' => [
             'docentes' => [12,12],
-            'graduados' => [4,4],
+            'graduad' => [4,4],
             'estudiantes' => [12,12],
             'nodocentes' => [12,12],
         ],
         'directivo' => [
             'docentes' => [8,8],
-            'graduados' => [1,3],
+            'graduad' => [1,3],
             'estudiantes' => [4,4],
             'nodocentes' => [3,3],
         ],
@@ -183,9 +183,7 @@ class ListaValidationService
 
             foreach ($postulantesInput[$rol] as $index => $data) {
 
-
                 // 1. Validación mínima de input
-
 
                 if (empty($data['dni'])) {
                     return [
@@ -199,8 +197,11 @@ class ListaValidationService
                     ];
                 }
 
+                // El legajo es obligatorio para superior/directivo,
+                // excepto cuando el claustro es Graduados.
                 if (
                     in_array($tipo, ['superior', 'directivo']) &&
+                    !$this->claustroEsGraduados($id_claustro) &&
                     empty($data['legajo'])
                 ) {
                     return [
@@ -218,7 +219,6 @@ class ListaValidationService
 
                 // 2. Persona existente
 
-
                 $persona = Persona::where('dni', $data['dni'])->first();
 
                 if (!$persona) {
@@ -234,7 +234,6 @@ class ListaValidationService
 
 
                 // 3. Pertenencia a padrón
-
 
                 if (
                     !$this->personaEstaEnPadron(
@@ -259,24 +258,26 @@ class ListaValidationService
 
                 // 4. Construcción final
 
-
                 $postulantesValidos[] = [
                     'persona' => $persona,
                     'tipo'    => $rol === 'titulares' ? 'titular' : 'suplente',
                     'orden'   => $index + 1,
-                    'legajo'  => in_array($tipo, ['superior', 'directivo'])
-                                    ? $data['legajo']
-                                    : null,
+                    'legajo'  => (
+                        in_array($tipo, ['superior', 'directivo']) &&
+                        !$this->claustroEsGraduados($id_claustro)
+                    )
+                        ? $data['legajo']
+                        : null,
                 ];
 
-                
+
                 if (in_array($persona->id, $postulantesIds, true)) {
                     return [
                         'ok' => false,
                         'errors' => [[
                             'message' => 'El postulante aparece más de una vez en la lista.',
                             'dni' => $persona->dni,
-                            'nombre' =>  "{$persona->apellido}, {$persona->nombre}",
+                            'nombre' => "{$persona->apellido}, {$persona->nombre}",
                             'rol' => $rol,
                             'orden' => $index + 1,
                         ]],
@@ -290,7 +291,6 @@ class ListaValidationService
 
 
         // 5. Conflicto con otras listas
-
 
         if (!empty($postulantesIds)) {
 
@@ -330,6 +330,24 @@ class ListaValidationService
             'errors' => [],
             'postulantes' => $postulantesValidos
         ];
+    }
+
+    private function claustroEsGraduados(?int $id_claustro): bool
+    {
+        if (empty($id_claustro)) {
+            return false;
+        }
+
+        $claustro = Claustro::find($id_claustro);
+
+        if (!$claustro) {
+            return false;
+        }
+
+        return str_contains(
+            mb_strtolower($claustro->nombre),
+            'graduad'
+        );
     }
 
 
