@@ -15,13 +15,13 @@ class ListaValidationService
     protected array $reglas = [
         'superior' => [
             'docentes' => [12,12],
-            'graduad' => [4,4],
+            'graduados' => [4,4],
             'estudiantes' => [12,12],
             'nodocentes' => [12,12],
         ],
         'directivo' => [
             'docentes' => [8,8],
-            'graduad' => [1,3],
+            'graduados' => [1,3],
             'estudiantes' => [4,4],
             'nodocentes' => [3,3],
         ],
@@ -38,39 +38,82 @@ class ListaValidationService
      * Lanza Exception si no se reconoce
      */
 
+  
     public function obtenerReglas(string $tipo, string $claustroNombre = null): array
     {
-        $tipo = strtolower($tipo);
+        $tipo = mb_strtolower($tipo);
 
+        //Decano y Rector tienen una única regla
+        //Independientemente del claustro
         if (in_array($tipo, ['decano', 'rector'])) {
             return [
-                'min_titulares' => 1, 'max_titulares' => 1,
-                'min_suplentes' => 1, 'max_suplentes' => 1,
+                'min_titulares' => 1,
+                'max_titulares' => 1,
+                'min_suplentes' => 1,
+                'max_suplentes' => 1,
             ];
         }
 
+        //Verificar que el tipo exista en las reglas
         if (!isset($this->reglas[$tipo])) {
-            throw new \InvalidArgumentException("Tipo de lista no soportado: {$tipo}");
+            throw new \InvalidArgumentException(
+                "Tipo de lista no soportado: {$tipo}"
+            );
         }
 
-        //si existe la clave '*' (aplica a todos)
-        if (isset($this->reglas[$tipo]['*'])) {
-            [$t,$s] = $this->reglas[$tipo]['*'];
-            return ['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
+        //Si existe una regla general (*), se aplica a todos
+        if (isset($this->reglas[$tipo]['*'])){
+            [$t, $s] = $this->reglas[$tipo]['*'];
+
+            return [
+                'min_titulares' => $t,
+                'max_titulares' => $t,
+                'min_suplentes' => 1,
+                'max_suplentes' => $s,
+            ];
         }
 
+        //Para superior y directivo necesitamos conocer el claustro
         if (!$claustroNombre) {
-            throw new \InvalidArgumentException("Se requiere nombre de claustro para tipo {$tipo}");
+            throw new \InvalidArgumentException(
+                "Se requiere nombre de claustro para tipo {$tipo}"
+            );
         }
 
-        $cn = mb_strtolower($claustroNombre);
-        foreach ($this->reglas[$tipo] as $clave => [$t,$s]) {
-            if (mb_strpos($cn, $clave) !== false) {
-                return['min_titulares'=>$t, 'max_titulares'=>$t, 'min_suplentes'=>1,'max_suplentes'=>$s];
-            }
+        //Normalizamos el nombre del claustro para tener una
+        //clave comun y coincida en las reglas
+
+        $cn = mb_strtolower(trim($claustroNombre));
+
+        $claveClaustro = null;
+
+        if (str_contains($cn, 'docente') && !str_contains($cn, 'nodocente')) {
+            $claveClaustro = 'docentes';
+        } elseif (str_contains($cn, 'nodocente')){
+            $claveClaustro = 'nodocentes';
+        } elseif (str_contains($cn, 'graduad')){
+            $claveClaustro = 'graduados';
+        } elseif (str_contains($cn, 'estudiante')){
+            $claveClaustro = 'estudiantes';
         }
 
-        throw new \InvalidArgumentException("Claustro '{$claustroNombre}' no reconocido para tipo {$tipo}");
+        if (
+            $claveClaustro === null ||
+            !isset($this->reglas[$tipo][$claveClaustro])
+        ) {
+            throw new \InvalidArgumentException(
+                "Claustro '{$claustroNombre}' no reconocido para tipo {$tipo}"
+            );
+        }
+
+        [$t, $s] = $this->reglas[$tipo][$claveClaustro];
+
+        return [
+            'min_titulares' => $t,
+            'max_titulares' => $t,
+            'min_suplentes' => 1,
+            'max_suplentes' => $s,
+        ];
     }
 
     /**
@@ -135,7 +178,7 @@ class ListaValidationService
 
         
         $result = $this->validarPostulantes(
-        $payload['postulantes'],
+        $postulanteInput,
         $tipo,
         $anio,
         $id_claustro,
@@ -165,7 +208,9 @@ class ListaValidationService
     *
     * @return array ['ok'=>bool, 'errors'=>[], 'postulantes'=>[]]
     */
-    private function validarPostulantes(
+    
+    //COMENTADA POR EL MOMENTO, SI SALE MAL LA NUEVA LA DESCOMENTO
+   /* private function validarPostulantes(
         array $postulantesInput,
         string $tipo,
         int $anio,
@@ -330,8 +375,160 @@ class ListaValidationService
             'errors' => [],
             'postulantes' => $postulantesValidos
         ];
+    }*/
+
+    private function validarPostulantes(
+        array $postulantesInput,
+        string $tipo,
+        int $anio,
+        ?int $id_claustro,
+        array $payload
+    ): array {
+
+        $postulantesValidos = [];
+        $postulantesIds = [];
+        $errores = [];
+
+        foreach (['titulares', 'suplentes'] as $rol) {
+
+            if (empty($postulantesInput[$rol])){
+                continue;
+            }
+
+            foreach ($postulantesInput[$rol] as $index => $data) {
+                $posicion = $index + 1;
+                $rolTexto = $rol === 'titulares'
+                    ? 'Titular'
+                    : 'Suplente';
+
+                $identificador = "{$rolTexto} {$posicion}";
+
+                // DNI obligatorio
+
+                if (empty($data['dni'])) {
+                    $errores[] = [
+                        'message' => "{$identificador}: falta ingresar el DNI.",
+                        'rol' => $rol,
+                        'orden' => $posicion,
+                    ];
+
+                    continue;
+                }
+
+                // BUSCAR PERSONA
+
+                $persona = Persona::where('dni', $data['dni'])->first();
+
+                if (!$persona) {
+                    $errores[] = [
+                        'message' => "{$identificador}: el DNI {$data['dni']} no corresponde a una persona registrada",
+                        'dni' => $data['dni'],
+                        'rol' => $rol,
+                        'orden' => $posicion,
+                    ];
+
+                    continue;
+                }
+
+                // Buscar inscripción correspondiente al padron
+
+                $inscripcion = $this->obtenerInscripcionEnPadron(
+                    $persona,
+                    $tipo,
+                    $anio,
+                    $id_claustro,
+                    $payload
+                );
+
+                if (!$inscripcion) {
+                    $errores[] = [
+                        'message' => "{$identificador}: el DNI {$persona->dni} corresponde a una persona que no pertenece al padrón habilitado",
+                        'dni' => $persona->dni,
+                        'nombre' => "{$persona->apellido}, {$persona->nombre}",
+                        'rol' => $rol,
+                        'orden' => $posicion,
+                    ];
+                    continue;
+                }
+
+                //Verificar DNI repetido dentro de esta lista
+
+                if (in_array($persona->id, $postulantesIds, true)) {
+                    $errores[] = [
+                        'message' => "{$identificador}: el DNI {$persona->dni} está repetido dentro de esta lista",
+                        'dni' => $persona->dni,
+                        'nombre' => "{$persona->apellido}, {$persona->nombre}",
+                        'rol' => $rol,
+                        'orden' => $posicion,
+                    ];
+
+                    continue;
+                }
+
+                $postulantesIds[] = $persona->id;
+
+                // Agregar postulante válido
+
+                $postulantesValidos[] = [
+                    'persona' => $persona,
+                    'tipo' => $rol === 'titulares'
+                        ? 'titular'
+                        : 'suplente',
+                    'orden' => $posicion,
+
+                    // El legajo ahora sale directamente
+                    // de la inscripcion correspondiente
+                    'legajo' => $inscripcion->legajo,
+                ];
+            }
+        }
+
+        // Conflicto con otras listas
+
+        if (!empty($postulantesIds)) {
+            $conflictos = ListaPostulante::with(['persona', 'lista'])
+                ->whereIn('id_persona', array_unique($postulantesIds))
+                ->whereHas('lista', function ($q) use ($anio, $tipo) {
+                    $q->where('anio', $anio)
+                        ->where('tipo', $tipo);
+                })
+                ->get();
+
+                foreach ($conflictos as $conflicto) {
+                    $persona = $conflicto->persona;
+
+                    $errores[] = [
+                        'message' => "El DNI {$persona->dni} ya pertenece a otra lista del mismo año",
+                        'dni' => $persona->dni,
+                        'nombre' => "{$persona->apellido}, {$persona->nombre}",
+                        'lista_tipo' => $conflicto->lista->tipo,
+                        'lista_nombre' => $conflicto->lista->nombre,
+                        'lista_anio' => $conflicto->lista->anio,
+                    ];
+                }
+        }
+
+        // Si hubo errores, se devuelven todos
+
+        if (!empty($errores)) {
+            return [
+                'ok' => false,
+                'errors' => $errores,
+                'postulantes' => [],
+            ];
+        }
+
+        // Todo correcto
+
+        return [
+            'ok' => true,
+            'errors' => [],
+            'postulantes' => $postulantesValidos,
+        ];
     }
 
+
+    
     private function claustroEsGraduados(?int $id_claustro): bool
     {
         if (empty($id_claustro)) {
@@ -351,7 +548,7 @@ class ListaValidationService
     }
 
 
-    private function personaEstaEnPadron(
+    /*private function personaEstaEnPadron(
         Persona $persona,
         string $tipo,
         int $anio,
@@ -383,6 +580,75 @@ class ListaValidationService
         return Inscripcion::where('id_persona', $persona->id)
             ->whereIn('id_padron', $padronQuery->select('id'))
             ->exists();
+    }*/
+
+    //NUEVA FUNCION PARA PROBAR
+    private function obtenerInscripcionEnPadron(
+        Persona $persona,
+        string $tipo,
+        int $anio,
+        ?int $id_claustro,
+        array $payload
+    ): ?Inscripcion 
+    {
+
+    // 1. Verificar si el tipo es válido
+    $tiposSoportados = ['superior', 'directivo', 'decano', 'rector'];
+
+    if (!in_array($tipo, $tiposSoportados)) {
+        return null;
+    }
+
+    // 2. Validaciones tempranas
+    if ( in_array($tipo, ['superior', 'directivo']) && 
+        empty($id_claustro) )
+    {
+            return null;
+    }
+
+    if ( in_array($tipo, ['directivo', 'decano']) &&
+        empty($payload['id_facultad'])
+    ) {
+        return null;
+    }
+
+    // 3. Construir query del padrón correspondiente
+    $padronQuery = Padron::where('anio', $anio);
+
+    match ($tipo) {
+        'superior' => $padronQuery
+            ->where('id_claustro', $id_claustro),
+            
+        'directivo' => $padronQuery 
+            ->where('id_claustro', $id_claustro)
+            ->where('id_facultad', $payload['id_facultad']),
+
+        'decano' => $padronQuery
+            ->where('id_facultad', $payload['id_facultad']),
+        
+        'rector' => null,
+    };
+
+    // 4. Obtener la inscripción concreta
+    return Inscripcion::where('id_persona', $persona->id)
+        ->whereIn('id_padron', $padronQuery->select('id'))
+        ->first();
+    }
+
+    private function personaEstaEnPadron(
+        Persona $persona,
+        string $tipo,
+        int $anio,
+        ?int $id_claustro,
+        array $payload
+    ): bool {
+        return $this->obtenerInscripcionEnPadron(
+            $persona,
+            $tipo,
+            $anio,
+            $id_claustro,
+            $payload
+        ) != null;
     }
     
     public function __construct()

@@ -432,14 +432,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    function legajoObligatorio() {
-
-        return ['superior', 'directivo'].includes(tipo.value)
-            && idClaustro.value !== '4';
-
-    }
-
-
     // ========================================
     // GENERAR TITULARES
     // ========================================
@@ -467,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             case 'directivo':
 
-                if (claustroTexto.includes('graduado')) {
+                if (claustroTexto.includes('graduad')) {
                     cantidad = 1;
                 } else if (
                     claustroTexto.includes('docente') ||
@@ -494,9 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
             agregarPostulante(
                 titulares,
                 'titulares',
-                i,
-                true,
-                legajoObligatorio()
+                i
             );
 
         }
@@ -511,9 +501,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function agregarPostulante(
         contenedor,
         grupo,
-        orden,
-        mostrarLegajo,
-        requiereLegajo
+        orden
     ) {
 
         const div = document.createElement('div');
@@ -542,21 +530,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             </div>
 
-            <div class="col-md-4"
-                 style="${mostrarLegajo ? '' : 'display:none;'}">
-
-                <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Legajo"
-                    data-grupo="${grupo}"
-                    data-orden="${orden}"
-                    data-campo="legajo"
-                    ${requiereLegajo ? 'required' : ''}
-                >
-
-            </div>
-
         `;
 
         contenedor.appendChild(div);
@@ -578,9 +551,7 @@ document.addEventListener('DOMContentLoaded', function () {
             agregarPostulante(
                 suplentes,
                 'suplentes',
-                cantidadSuplentes,
-                ['superior', 'directivo'].includes(tipo.value),
-                legajoObligatorio()
+                cantidadSuplentes
             );
 
         });

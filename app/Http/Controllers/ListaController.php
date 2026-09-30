@@ -85,11 +85,11 @@ class ListaController extends Controller
 
             'postulantes.titulares' => 'required|array',
             'postulantes.titulares.*.dni' => 'required|string',
-            'postulantes.titulares.*.legajo' => 'nullable|string',
+            #'postulantes.titulares.*.legajo' => 'nullable|string',
 
             'postulantes.suplentes' => 'nullable|array',
             'postulantes.suplentes.*.dni' => 'required|string',
-            'postulantes.suplentes.*.legajo' => 'nullable|string',
+            #'postulantes.suplentes.*.legajo' => 'nullable|string',
         ]);
 
         $resultado = $this->creationService->create($request->all());
