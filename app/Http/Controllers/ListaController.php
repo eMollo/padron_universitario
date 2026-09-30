@@ -110,4 +110,42 @@ class ListaController extends Controller
         ], 201);
     }
 
+    //Para numeración en modo historico
+    public function numerosDisponibles(Request $request) {
+        $request->validate([
+            'anio' => ['required', 'integer'],
+            'tipo' => ['required', 'in:superior,directivo,decano,rector'],
+            'id_claustro' => ['nullable', 'integer'],
+        ]);
+
+        $anio = $request->anio;
+        $tipo = $request->tipo;
+        $idClaustro = $request->id_claustro;
+
+        $query = Lista::where('anio', $anio)
+            ->where('tipo', $tipo);
+
+        if (in_array($tipo, ['superior', 'directivo'])) {
+            $query->where('id_claustro', $idClaustro);
+        }
+
+        $utilizados = $query
+            ->whereNotNull('numero')
+            ->pluck('numero')
+            ->map(fn ($numero) => (int) $numero)
+            ->toArray();
+
+        $disponibles = [];
+
+        for ($numero =1; $numero <= 50; $numero++) {
+            if (!in_array($numero, $utilizados, true)) {
+                $disponibles[] = $numero;
+            }
+        }
+
+        return response()->json([
+            'disponibles' => $disponibles,
+        ]);
+    }
+
 }

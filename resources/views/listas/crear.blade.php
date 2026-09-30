@@ -73,13 +73,13 @@
                             Número de lista
                         </label>
 
-                        <input
-                            type="number"
-                            min="1"
-                            class="form-control"
+                        <select
+                            class="form-select"
                             id="numero"
                             name="numero"
                         >
+                            <option value="">Seleccionar número...</option>
+                        </select>
                     </div>
 
                 </div>
@@ -417,18 +417,103 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function actualizarModoCarga() {
 
+        const numero = document.getElementById('numero');
+
         if (modoCarga.value === 'historica') {
 
             contenedorNumero.style.display = 'block';
+            numero.required = true;
+
+            cargarNumerosDisponibles();
 
         } else {
 
             contenedorNumero.style.display = 'none';
-
-            document.getElementById('numero').value = '';
+            numero.required = false;
+            numero.value = '';
+            //document.getElementById('numero').value = '';
 
         }
 
+    }
+
+    async function cargarNumerosDisponibles() {
+
+        const anio = document.getElementById('anio').value;
+        const tipoValor = tipo.value;
+        const claustro = idClaustro.value;
+
+        const numero = document.getElementById('numero');
+
+        numero.innerHTML = `
+            <option value="">Seleccionar número...</option>
+        `;
+
+        if (!anio || !tipoValor) {
+            return;
+        }
+
+        if ( 
+            ['superior', 'directivo'].includes(tipoValor) && !claustro
+        ) {
+            return;
+        }
+
+        try {
+
+            const params = new URLSearchParams({
+                anio: anio,
+                tipo: tipoValor
+            });
+
+            if (claustro) {
+                params.append('id_claustro', claustro);
+            }
+
+            const response = await fetch(
+                `/api/listas/numeros-disponibles?${params.toString()}`,
+                {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('No se pudieron obtener los numeros disponibles.');
+            }
+
+            const data = await response.json();
+
+            data.disponibles.forEach(numeroDisponible => {
+
+                const option = document.createElement('option');
+
+                option.value = numeroDisponible;
+                option.textContent = numeroDisponible;
+
+                numero.appendChild(option);
+
+            });
+
+            if (data.disponibles.length === 0) {
+                
+                numero.innerHTML = `
+                    <option value="">
+                        No hay números disponibles
+                    </option>
+                `;
+            }
+        } catch (error) {
+
+            console.error(error);
+
+            numero.innerHTML = `
+                <option value="">
+                    Error al cargar números
+                </option>
+            `;
+        }
     }
 
 
@@ -467,9 +552,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     claustroTexto.includes('nodocente')
                 ) {
                     cantidad =
+                        claustroTexto.includes('nodocente') ? 3 :
                         claustroTexto.includes('docente') ? 8 :
                         claustroTexto.includes('estudiante') ? 4 :
-                        3;
+                        0;
                 }
 
                 break;
@@ -561,11 +647,24 @@ document.addEventListener('DOMContentLoaded', function () {
     // CAMBIAR TIPO
     // ========================================
 
-    tipo.addEventListener('change', actualizarTipo);
+    tipo.addEventListener('change', function () {
+        actualizarTipo();
+        cargarNumerosDisponibles();
+    });
 
-    idClaustro.addEventListener('change', generarTitulares);
+    idClaustro.addEventListener('change', function () {
+        generarTitulares();
+        cargarNumerosDisponibles();
+    });
 
-    modoCarga.addEventListener('change', actualizarModoCarga);
+    modoCarga.addEventListener('change', function () {
+        actualizarModoCarga();
+        cargarNumerosDisponibles();
+    });
+
+    document.getElementById('anio').addEventListener('change', function () {
+        cargarNumerosDisponibles();
+    });
 
 
     // ========================================

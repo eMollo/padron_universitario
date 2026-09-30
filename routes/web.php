@@ -105,6 +105,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::post('padrones/importar', [PadronController::class, 'importar']);
         Route::post('listas', [ListaController::class, 'store']);
         Route::post('listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
+        Route::get('/listas/numeros-disponibles', [ListaController::class, 'numerosDisponibles']);
 
         Route::post('inscripciones/{id}/restaurar', [InscripcionController::class, 'restaurar']);
         Route::post('padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);
