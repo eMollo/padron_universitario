@@ -408,6 +408,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         generarTitulares();
 
+        actualizarBotonAgregarSuplente();
+
     }
 
 
@@ -584,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // AGREGAR POSTULANTE
     // ========================================
 
-    function agregarPostulante(
+    /*function agregarPostulante(
         contenedor,
         grupo,
         orden
@@ -620,6 +622,98 @@ document.addEventListener('DOMContentLoaded', function () {
 
         contenedor.appendChild(div);
 
+    }*/
+
+    function agregarPostulante(
+        contenedor,
+        grupo,
+        orden
+    ) {
+        const div = document.createElement('div');
+
+        div.className = 'row mb-2 fila-postulante';
+
+        if (grupo === 'suplentes') {
+            div.classList.add('fila-suplente');
+        }
+
+        div.dataset.orden = orden;
+
+        div.innerHTML = `
+            <div class="col-md-1">
+                <label class="form-label">
+                    ${orden}
+                </label>
+            </div>
+
+            <div class="col-md-5">
+                <input
+                    type="text"
+                    class="form-control"
+                    name="${grupo}_dni[]"
+                    data-grupo="${grupo}"
+                    data-orden="${orden}"
+                    placeholder="DNI"
+                    required
+                >
+            </div>
+
+            ${
+                grupo === 'suplentes'
+                    ? `
+                        <div class="col-md-3">
+                            <button
+                                type="button"
+                                class="btn btn-outline-danger btn-eliminar-suplente"
+                            >
+                                Eliminar
+                            </button>
+                        </div>
+                    `
+                    : ''
+            }
+        `;
+
+        contenedor.appendChild(div);
+
+        if (grupo === 'suplentes') {
+            const botonEliminar = div.querySelector(
+                '.btn-eliminar-suplente'
+            );
+
+            botonEliminar.addEventListener('click', function () {
+                div.remove();
+
+                renumerarSuplentes();
+            });
+        }
+    }
+
+    function renumerarSuplentes() {
+        const filas = suplentes.querySelectorAll('.fila-suplente');
+
+        filas.forEach((fila, index) => {
+            const nuevoOrden = index + 1;
+
+            fila.dataset.orden = nuevoOrden;
+
+            const etiqueta = fila.querySelector('label');
+            if (etiqueta) {
+                etiqueta.textContent = nuevoOrden;
+            }
+
+            const inputDni = fila.querySelector(
+                '[data-grupo="suplentes"]'
+            );
+
+            if (inputDni) {
+                inputDni.dataset.orden = nuevoOrden;
+            }
+        });
+
+        cantidadSuplentes = filas.length;
+
+        actualizarBotonAgregarSuplente();
     }
 
 
@@ -632,6 +726,12 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('agregarSuplente')
         .addEventListener('click', function () {
 
+        const maximo = obtenerMaxSuplentes();
+
+        if (cantidadSuplentes >= maximo) {
+            return;
+        }
+
             cantidadSuplentes++;
 
             agregarPostulante(
@@ -640,8 +740,61 @@ document.addEventListener('DOMContentLoaded', function () {
                 cantidadSuplentes
             );
 
+            actualizarBotonAgregarSuplente();
+
         });
 
+    function obtenerMaxSuplentes() {
+
+        const claustro = idClaustro.value;
+
+        switch (tipo.value) {
+            case 'superior':
+                if (claustro === '4') {
+                    return 4; //Personas Graduadas
+                }
+
+                return 12; //Docentes, NoDocentes y Estudiantes
+            
+            case 'directivo':
+                if (claustro === '1') {
+                    return 8; //Docentes
+                }
+
+                if (claustro === '2') {
+                    return 3; //NoDocentes
+                }
+
+                if (claustro === '3') {
+                    return 4; //Estudiantes
+                }
+
+                if (claustro === '4') {
+                    return 3; //Personas Graduadas
+                }
+
+                return 0;
+
+            case 'decano':
+            case 'rector':
+                return 1;
+
+            default:
+                return 0;
+        }
+    }
+
+    function actualizarBotonAgregarSuplente() {
+        const boton = document.getElementById('agregarSuplente');
+
+        if (!boton) {
+            return;
+        }
+
+        const maximo = obtenerMaxSuplentes();
+
+        boton.disabled = cantidadSuplentes >= maximo;
+    }
 
     // ========================================
     // CAMBIAR TIPO
@@ -786,7 +939,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     <strong>Lista creada correctamente.</strong>
 
-                    ID: ${data.lista.id}
+                    
 
                     <br>
 
