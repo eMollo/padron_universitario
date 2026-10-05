@@ -624,97 +624,95 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }*/
 
-    function agregarPostulante(
-        contenedor,
-        grupo,
-        orden
-    ) {
-        const div = document.createElement('div');
+    
+function agregarPostulante(contenedor, grupo, orden) {
+    const div = document.createElement('div');
 
-        div.className = 'row mb-2 fila-postulante';
+    div.className = 'row mb-2 fila-postulante';
 
-        if (grupo === 'suplentes') {
-            div.classList.add('fila-suplente');
-        }
-
-        div.dataset.orden = orden;
-
-        div.innerHTML = `
-            <div class="col-md-1">
-                <label class="form-label">
-                    ${orden}
-                </label>
-            </div>
-
-            <div class="col-md-5">
-                <input
-                    type="text"
-                    class="form-control"
-                    name="${grupo}_dni[]"
-                    data-grupo="${grupo}"
-                    data-orden="${orden}"
-                    placeholder="DNI"
-                    required
-                >
-            </div>
-
-            ${
-                grupo === 'suplentes'
-                    ? `
-                        <div class="col-md-3">
-                            <button
-                                type="button"
-                                class="btn btn-outline-danger btn-eliminar-suplente"
-                            >
-                                Eliminar
-                            </button>
-                        </div>
-                    `
-                    : ''
-            }
-        `;
-
-        contenedor.appendChild(div);
-
-        if (grupo === 'suplentes') {
-            const botonEliminar = div.querySelector(
-                '.btn-eliminar-suplente'
-            );
-
-            botonEliminar.addEventListener('click', function () {
-                div.remove();
-
-                renumerarSuplentes();
-            });
-        }
+    if (grupo === 'suplentes') {
+        div.classList.add('fila-suplente');
     }
 
-    function renumerarSuplentes() {
-        const filas = suplentes.querySelectorAll('.fila-suplente');
+    div.dataset.orden = orden;
 
-        filas.forEach((fila, index) => {
-            const nuevoOrden = index + 1;
+    div.innerHTML = `
+        <div class="col-md-1">
+            <label class="form-label numero-postulante">
+                ${orden}
+            </label>
+        </div>
 
-            fila.dataset.orden = nuevoOrden;
+        <div class="col-md-5">
+            <input
+                type="text"
+                class="form-control"
+                data-grupo="${grupo}"
+                data-orden="${orden}"
+                data-campo="dni"
+                placeholder="DNI"
+                required
+            >
+        </div>
 
-            const etiqueta = fila.querySelector('label');
-            if (etiqueta) {
-                etiqueta.textContent = nuevoOrden;
-            }
+        ${
+            grupo === 'suplentes'
+                ? `
+                    <div class="col-md-3">
+                        <button
+                            type="button"
+                            class="btn btn-outline-danger btn-eliminar-suplente"
+                        >
+                            Eliminar
+                        </button>
+                    </div>
+                `
+                : ''
+        }
+    `;
 
-            const inputDni = fila.querySelector(
-                '[data-grupo="suplentes"]'
-            );
+    contenedor.appendChild(div);
 
-            if (inputDni) {
-                inputDni.dataset.orden = nuevoOrden;
-            }
+    if (grupo === 'suplentes') {
+        const botonEliminar = div.querySelector(
+            '.btn-eliminar-suplente'
+        );
+
+        botonEliminar.addEventListener('click', function () {
+            div.remove();
+            renumerarSuplentes();
         });
-
-        cantidadSuplentes = filas.length;
-
-        actualizarBotonAgregarSuplente();
     }
+}
+
+    
+function renumerarSuplentes() {
+    const filas = suplentes.querySelectorAll('.fila-suplente');
+
+    filas.forEach((fila, index) => {
+        const nuevoOrden = index + 1;
+
+        fila.dataset.orden = nuevoOrden;
+
+        const etiqueta = fila.querySelector('.numero-postulante');
+
+        if (etiqueta) {
+            etiqueta.textContent = nuevoOrden;
+        }
+
+        const inputDni = fila.querySelector(
+            '[data-grupo="suplentes"]'
+        );
+
+        if (inputDni) {
+            inputDni.dataset.orden = nuevoOrden;
+        }
+    });
+
+    cantidadSuplentes = filas.length;
+
+    actualizarBotonAgregarSuplente();
+}
 
 
     // ========================================
