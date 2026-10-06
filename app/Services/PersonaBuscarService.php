@@ -99,40 +99,6 @@ class PersonaBuscarService
         $idFacultad,
         $idClaustro
     ) {
-        /*$query = Persona::query();
-
-        if ($dni) {
-            $query->where('dni', $dni);
-        }
-
-        if ($apellido) {
-            $query->where('apellido', 'ILIKE', "%{$apellido}%");
-        }
-
-        if ($nombre) {
-            $query->where('nombre', 'ILIKE', "%{$nombre}%");
-        }
-
-        // filtrar personas que tengan inscripciones válidas
-        if ($anio || $idFacultad || $idClaustro) {
-            $query->whereHas('inscripciones', function ($q) use ($anio, $idFacultad, $idClaustro) {
-
-                $q->whereHas('padron', function ($sub) use ($anio, $idFacultad, $idClaustro) {
-
-                    if ($anio) {
-                        $sub->where('anio', $anio);
-                    }
-
-                    if ($idFacultad) {
-                        $sub->where('id_facultad', $idFacultad);
-                    }
-
-                    if ($idClaustro) {
-                        $sub->where('id_claustro', $idClaustro);
-                    }
-                });
-            });
-        }*/
 
         $query = Persona::query()
         ->whereHas('inscripciones', function ($q) {

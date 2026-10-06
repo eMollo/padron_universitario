@@ -10,9 +10,7 @@
 
     <form id="formCrearLista">
 
-        {{-- ========================= --}}
         {{-- DATOS DE LA LISTA --}}
-        {{-- ========================= --}}
 
         <div class="card mb-4">
             <div class="card-header">
@@ -177,9 +175,7 @@
         </div>
 
 
-        {{-- ========================= --}}
         {{-- APODERADO --}}
-        {{-- ========================= --}}
 
         <div class="card mb-4">
 
@@ -264,9 +260,7 @@
         </div>
 
 
-        {{-- ========================= --}}
         {{-- TITULARES --}}
-        {{-- ========================= --}}
 
         <div class="card mb-4">
 
@@ -282,9 +276,7 @@
         </div>
 
 
-        {{-- ========================= --}}
         {{-- SUPLENTES --}}
-        {{-- ========================= --}}
 
         <div class="card mb-4">
 
@@ -310,9 +302,8 @@
         </div>
 
 
-        {{-- ========================= --}}
+
         {{-- BOTÓN --}}
-        {{-- ========================= --}}
 
         <div class="mb-5">
 
@@ -366,9 +357,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('mensaje');
 
 
-    // ========================================
     // ACTUALIZAR CAMPOS SEGÚN TIPO
-    // ========================================
 
     function actualizarTipo() {
 
@@ -413,9 +402,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // ========================================
     // MODO DE CARGA
-    // ========================================
 
     function actualizarModoCarga() {
 
@@ -519,9 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    // ========================================
     // GENERAR TITULARES
-    // ========================================
 
     function generarTitulares() {
 
@@ -580,49 +565,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
-
-
-    // ========================================
-    // AGREGAR POSTULANTE
-    // ========================================
-
-    /*function agregarPostulante(
-        contenedor,
-        grupo,
-        orden
-    ) {
-
-        const div = document.createElement('div');
-
-        div.className = 'row mb-2';
-
-        div.innerHTML = `
-
-            <div class="col-md-1">
-                <label class="form-label">
-                    ${orden}
-                </label>
-            </div>
-
-            <div class="col-md-4">
-
-                <input
-                    type="text"
-                    class="form-control"
-                    placeholder="DNI"
-                    data-grupo="${grupo}"
-                    data-orden="${orden}"
-                    data-campo="dni"
-                    required
-                >
-
-            </div>
-
-        `;
-
-        contenedor.appendChild(div);
-
-    }*/
 
     
 function agregarPostulante(contenedor, grupo, orden) {
@@ -715,9 +657,7 @@ function renumerarSuplentes() {
 }
 
 
-    // ========================================
     // SUPLENTES
-    // ========================================
 
     let cantidadSuplentes = 0;
 
@@ -794,9 +734,7 @@ function renumerarSuplentes() {
         boton.disabled = cantidadSuplentes >= maximo;
     }
 
-    // ========================================
     // CAMBIAR TIPO
-    // ========================================
 
     tipo.addEventListener('change', function () {
         actualizarTipo();
@@ -818,9 +756,7 @@ function renumerarSuplentes() {
     });
 
 
-    // ========================================
     // SUBMIT
-    // ========================================
 
     form.addEventListener('submit', async function (event) {
 
@@ -981,9 +917,7 @@ function renumerarSuplentes() {
     });
 
 
-    // ========================================
     // OBTENER POSTULANTES
-    // ========================================
 
     function obtenerPostulantes(grupo) {
 
@@ -1015,9 +949,8 @@ function renumerarSuplentes() {
     }
 
 
-    // ========================================
     // MOSTRAR ERROR
-    // ========================================
+
 
     function mostrarError(data) {
 

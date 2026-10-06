@@ -26,8 +26,8 @@ class ListaController extends Controller
 
     //Listar todas las listas
 
-    public function index(): JsonResponse {
-        $listas = Lista::with([
+    public function index(Request $request): JsonResponse {
+        $query = Lista::with([
             'apoderado',
             'postulantes.persona',
             'facultad',
@@ -35,10 +35,13 @@ class ListaController extends Controller
         ])
         ->orderByDesc('anio')
         ->orderBy('tipo')
-        ->orderBy('numero')
-        ->get();
+        ->orderBy('numero');
 
-        return response()->json($listas);
+        if ($request->filled('anio')) {
+            $query->where('anio', (int) $request->anio);
+        }
+
+        return response()->json($query->get());
     }
 
     //Ver una lista
