@@ -49,9 +49,12 @@ class ListaController extends Controller
     public function show($id): JsonResponse {
         $lista = Lista::with([
             'apoderado',
+            'postulantes' => fn($q) => $q->orderBy('tipo')->orderBy('orden'),
             'postulantes.persona',
             'facultad',
-            'claustro'
+            'claustro',
+            'avales',
+            'avales.persona'
         ])->find($id);
 
         if (!$lista) {

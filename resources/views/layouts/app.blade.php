@@ -28,7 +28,7 @@
 <div class="container-fluid">
 
 <span class="navbar-brand">
-Sistema de Padrones
+Sistema Electoral
 </span>
 
 <button onclick="logout()" class="btn btn-outline-light btn-sm">

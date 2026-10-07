@@ -32,4 +32,9 @@ class Lista extends Model
     {
         return $this->belongsTo(Claustro::class, 'id_claustro');
     }
+
+    public function avales()
+    {
+        return $this->hasMany(ListaAval::class, 'id_lista');
+    }
 }
