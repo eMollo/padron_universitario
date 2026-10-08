@@ -60,7 +60,7 @@
                                     <td id="dato-tipo">—</td>
                                 </tr>
                                 <tr id="fila-facultad">
-                                    <th class="text-muted fw-normal">Unidad Electoral</th>
+                                    <th class="text-muted fw-normal">Facultad</th>
                                     <td id="dato-facultad">—</td>
                                 </tr>
                                 <tr id="fila-claustro">
@@ -364,11 +364,17 @@ function renderPostulantes(tbodyId, postulantes) {
 
     tbody.innerHTML = postulantes.map(p => {
         const persona = p.persona ?? {};
+
+        // Para Consejo Superior: tooltip con la facultad en la celda de apellido
+        const celdaApellido = p.facultad_nombre
+            ? `<td title="${esc(p.facultad_nombre)}" style="cursor:help; text-decoration: underline dotted;">${esc(persona.apellido ?? '—')}</td>`
+            : `<td>${esc(persona.apellido ?? '—')}</td>`;
+
         return `
             <tr>
                 <td class="text-muted">${esc(p.orden)}</td>
-                <td>${esc(persona.apellido ?? '—')}</td>
-                <td>${esc(persona.nombre   ?? '—')}</td>
+                ${celdaApellido}
+                <td>${esc(persona.nombre ?? '—')}</td>
                 <td class="text-muted">${esc(persona.dni ?? '—')}</td>
             </tr>
         `;

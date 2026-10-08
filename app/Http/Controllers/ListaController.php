@@ -46,7 +46,7 @@ class ListaController extends Controller
 
     //Ver una lista
 
-    public function show($id): JsonResponse {
+        public function show($id): JsonResponse {
         $lista = Lista::with([
             'apoderado',
             'postulantes' => fn($q) => $q->orderBy('tipo')->orderBy('orden'),
@@ -54,17 +54,44 @@ class ListaController extends Controller
             'facultad',
             'claustro',
             'avales',
-            'avales.persona'
+            'avales.persona',
         ])->find($id);
-
+ 
         if (!$lista) {
             return response()->json([
                 'message' => 'Lista no encontrada'
             ], 404);
         }
-
+ 
+        // Para Consejo Superior: enriquecer cada postulante con la facultad
+        // de su inscripción activa en el mismo año y claustro de la lista.
+        if ($lista->tipo === 'superior' && $lista->id_claustro) {
+            $idsPersonas = $lista->postulantes->pluck('id_persona');
+ 
+            // Una sola query: inscripciones activas del año+claustro para estas personas
+            $facultadesPorPersona = \App\Models\Inscripcion::query()
+                ->join('padrones', 'inscripciones.id_padron', '=', 'padrones.id')
+                ->join('facultad', 'padrones.id_facultad', '=', 'facultad.id')
+                ->whereIn('inscripciones.id_persona', $idsPersonas)
+                ->where('padrones.anio', $lista->anio)
+                ->where('padrones.id_claustro', $lista->id_claustro)
+                ->whereNull('inscripciones.deleted_at')
+                ->select(
+                    'inscripciones.id_persona',
+                    'facultad.nombre as facultad_nombre'
+                )
+                ->get()
+                ->keyBy('id_persona');
+ 
+            $lista->postulantes->each(function ($postulante) use ($facultadesPorPersona) {
+                $postulante->facultad_nombre =
+                    $facultadesPorPersona[$postulante->id_persona]->facultad_nombre ?? null;
+            });
+        }
+ 
         return response()->json($lista);
     }
+
 
     //Crear una lista
 
