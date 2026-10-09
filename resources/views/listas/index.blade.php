@@ -2,15 +2,20 @@
 
 @section('content')
 
-<div class="container-fluid pb-4">
+<div class="container-fluid">
 
     {{-- ENCABEZADO --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="mb-0">Listas Electorales</h3>
         @if(auth()->user()?->hasRole('admin'))
-            <a href="{{ route('listas.crear') }}" class="btn btn-primary">
-                + Nueva Lista
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('listas.eliminadas') }}" class="btn btn-outline-danger btn-sm">
+                    🗑 Ver eliminadas
+                </a>
+                <a href="{{ route('listas.crear') }}" class="btn btn-primary">
+                    + Nueva Lista
+                </a>
+            </div>
         @endif
     </div>
 
@@ -54,9 +59,9 @@
         </li>
     </ul>
 
-
+    {{-- =============================== --}}
     {{-- MODO: POR TIPO --}}
-
+    {{-- =============================== --}}
     <div id="vista-tipo">
 
         {{-- Botones de tipo --}}
@@ -81,9 +86,9 @@
 
     </div>
 
-
+    {{-- =============================== --}}
     {{-- MODO: POR UNIDAD ELECTORAL --}}
-
+    {{-- =============================== --}}
     <div id="vista-facultad" style="display:none;">
 
         {{-- Botones de facultad --}}
@@ -114,7 +119,9 @@
 
 <script>
 
+// ============================================================
 // ESTADO
+// ============================================================
 
 let todasLasListas = [];
 let catalogoFacultades = [];
@@ -137,7 +144,9 @@ const COLORES_TIPO = {
 };
 
 
+// ============================================================
 // CARGA INICIAL
+// ============================================================
 
 async function cargarTodo() {
     const anio = document.getElementById('filtroAnio').value;
@@ -166,7 +175,9 @@ async function cargarTodo() {
 }
 
 
+// ============================================================
 // CAMBIAR MODO (PESTAÑAS)
+// ============================================================
 
 function cambiarModo(modo) {
     modoActual = modo;
@@ -184,7 +195,9 @@ function cambiarModo(modo) {
 }
 
 
+// ============================================================
 // MODO POR TIPO
+// ============================================================
 
 function seleccionarTipo(tipo) {
     tipoSeleccionado = tipo;
@@ -255,7 +268,9 @@ function renderVistaTipo() {
 }
 
 
+// ============================================================
 // MODO POR UNIDAD ELECTORAL
+// ============================================================
 
 function llenarBotonesFacultad() {
     const cont = document.getElementById('botonesFacultad');
@@ -338,7 +353,7 @@ function renderVistaFacultad() {
         const color = COLORES_TIPO[tipo];
 
         html += `
-            <h4 class="mt-4 mb-3 text-${color}">${ETIQUETAS_TIPO[tipo]}</h4>
+            <h5 class="mt-4 mb-3 text-${color}">${ETIQUETAS_TIPO[tipo]}</h5>
         `;
 
         if (tipo === 'directivo') {
@@ -352,12 +367,14 @@ function renderVistaFacultad() {
 }
 
 
+// ============================================================
 // AGRUPADORES
+// ============================================================
 
 function renderAgrupadoPorClaustro(listas) {
     const grupos = agruparPor(listas, l => l.claustro?.nombre ?? 'Sin claustro');
     return Object.entries(grupos).map(([nombre, items]) => `
-        <h3 class="text-muted mt-3 mb-2">${esc(nombre)}</h3>
+        <h6 class="text-muted mt-3 mb-2">${esc(nombre)}</h6>
         <div class="row g-3 mb-3">
             ${items.map(l => cardLista(l)).join('')}
         </div>
@@ -367,7 +384,7 @@ function renderAgrupadoPorClaustro(listas) {
 function renderAgrupadoPorFacultad(listas) {
     const grupos = agruparPor(listas, l => l.facultad?.nombre ?? 'Sin facultad');
     return Object.entries(grupos).map(([nombre, items]) => `
-        <h4 class="text-muted mt-3 mb-2">${esc(nombre)}</h4>
+        <h6 class="text-muted mt-3 mb-2">${esc(nombre)}</h6>
         <div class="row g-3 mb-3">
             ${items.map(l => cardLista(l)).join('')}
         </div>
@@ -382,7 +399,7 @@ function renderAgrupadoPorClaustroYFacultad(listas) {
         const porFacultad = agruparPor(items, l => l.facultad?.nombre ?? 'Sin facultad');
 
         const subgrupos = Object.entries(porFacultad).map(([facultad, sublistas]) => `
-            <h5 class="text-muted mb-2 ms-2">↳ ${esc(facultad)}</h5>
+            <h6 class="text-muted mb-2 ms-2">↳ ${esc(facultad)}</h6>
             <div class="row g-3 mb-3 ms-1">
                 ${sublistas.map(l => cardLista(l)).join('')}
             </div>
@@ -390,7 +407,7 @@ function renderAgrupadoPorClaustroYFacultad(listas) {
 
         return `
             <div class="mb-4">
-                <h4 class="border-bottom pb-1">${esc(claustro)}</h4>
+                <h5 class="border-bottom pb-1">${esc(claustro)}</h5>
                 ${subgrupos}
             </div>
         `;
@@ -398,7 +415,9 @@ function renderAgrupadoPorClaustroYFacultad(listas) {
 }
 
 
+// ============================================================
 // CARD DE LISTA
+// ============================================================
 
 function cardLista(l) {
     const color  = COLORES_TIPO[l.tipo] ?? 'secondary';
@@ -412,8 +431,8 @@ function cardLista(l) {
         <div class="col-md-4 col-lg-3">
             <div class="card h-100 border-${color}">
                 <div class="card-header bg-${color} bg-opacity-10 d-flex justify-content-between align-items-center">
-                    <span class="fw-bold" style="font-size: 1.4rem;">Lista ${numero}</span>
-                    <span class="badge bg-${color}" style="font-size: 0.9rem;">${ETIQUETAS_TIPO[l.tipo]}</span>
+                    <span class="fw-bold">Lista ${numero}</span>
+                    <span class="badge bg-${color}">${ETIQUETAS_TIPO[l.tipo]}</span>
                 </div>
                 <div class="card-body">
                     <p class="card-title fw-semibold mb-1">${esc(l.nombre)}${sigla}</p>
@@ -434,7 +453,9 @@ function cardLista(l) {
 }
 
 
+// ============================================================
 // UTILIDADES
+// ============================================================
 
 /**
  * Escapa caracteres HTML para evitar XSS al interpolar datos
@@ -460,7 +481,9 @@ function agruparPor(arr, keyFn) {
 }
 
 
+// ============================================================
 // ARRANQUE
+// ============================================================
 
 cargarTodo().then(() => seleccionarTipo('superior'));
 

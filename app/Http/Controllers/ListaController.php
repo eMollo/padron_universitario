@@ -63,7 +63,7 @@ class ListaController extends Controller
             ], 404);
         }
 
-        // Para Consejo Superior: conectar a cada postulante con la facultad
+        // Para Consejo Superior: enriquecer cada postulante con la facultad
         // de su inscripción activa en el mismo año y claustro de la lista.
         if ($lista->tipo === 'superior' && $lista->id_claustro) {
             $idsPersonas = $lista->postulantes->pluck('id_persona');
@@ -253,16 +253,58 @@ class ListaController extends Controller
     }
 
     // Soft delete de una lista
-    public function destroy($id): JsonResponse {
+    public function destroy(Request $request, $id): JsonResponse {
         $lista = Lista::find($id);
 
         if (!$lista) {
             return response()->json(['message' => 'Lista no encontrada'], 404);
         }
 
-        $lista->delete(); // soft delete via SoftDeletes en el modelo
+        $request->validate([
+            'motivo_baja' => 'required|string|max:500',
+        ]);
+
+        $lista->motivo_baja  = $request->motivo_baja;
+        $lista->eliminado_por = auth()->id();
+        $lista->save();
+        $lista->delete();
 
         return response()->json(['message' => 'Lista eliminada correctamente']);
+    }
+
+    // Listado de listas eliminadas (solo admin)
+    public function indexEliminados(Request $request): JsonResponse {
+        $query = Lista::onlyTrashed()
+            ->with(['apoderado', 'facultad', 'claustro', 'eliminadoPor'])
+            ->orderByDesc('deleted_at');
+
+        if ($request->filled('anio')) {
+            $query->where('anio', (int) $request->anio);
+        }
+
+        return response()->json($query->get());
+    }
+
+    // Detalle de una lista eliminada
+    public function showEliminada($id): JsonResponse {
+        $lista = Lista::onlyTrashed()
+            ->with([
+                'apoderado',
+                'postulantes' => fn($q) => $q->orderBy('tipo')->orderBy('orden'),
+                'postulantes.persona',
+                'facultad',
+                'claustro',
+                'avales',
+                'avales.persona',
+                'eliminadoPor',
+            ])
+            ->find($id);
+
+        if (!$lista) {
+            return response()->json(['message' => 'Lista eliminada no encontrada'], 404);
+        }
+
+        return response()->json($lista);
     }
 
     //Para numeración en modo historico

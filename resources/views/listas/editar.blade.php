@@ -170,22 +170,64 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Eliminar lista</h5>
+                <h5 class="modal-title text-danger">⚠ Eliminar lista</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p>¿Estás seguro que querés eliminar esta lista?</p>
-                <p class="text-muted small">
-                    La lista quedará registrada en el sistema pero no aparecerá
-                    en las vistas normales. Su número quedará libre.
+                <p class="text-muted small mb-3">
+                    La lista quedará registrada en el sistema con el motivo de baja,
+                    pero no aparecerá en las vistas normales. Su número quedará libre.
                 </p>
+
+                <label class="form-label fw-semibold">Motivo de eliminación <span class="text-danger">*</span></label>
+
+                {{-- Opciones predeterminadas --}}
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoRadio"
+                            id="motivo1" value="Candidatos no cumplen los requisitos">
+                        <label class="form-check-label" for="motivo1">
+                            Candidatos no cumplen los requisitos
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoRadio"
+                            id="motivo2" value="Falta de avales suficientes">
+                        <label class="form-check-label" for="motivo2">
+                            Falta de avales suficientes
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="motivoRadio"
+                            id="motivo3" value="otro">
+                        <label class="form-check-label" for="motivo3">
+                            Otro motivo...
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Campo libre (visible solo al seleccionar "Otro") --}}
+                <div id="contenedor-motivo-libre" style="display:none;">
+                    <textarea
+                        id="motivo-libre"
+                        class="form-control"
+                        rows="3"
+                        maxlength="500"
+                        placeholder="Describí el motivo de eliminación..."
+                    ></textarea>
+                </div>
+
+                <div id="error-motivo" class="text-danger small mt-2" style="display:none;">
+                    Seleccioná un motivo para continuar.
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     Cancelar
                 </button>
                 <button type="button" class="btn btn-danger" id="btn-confirmar-eliminar">
-                    Sí, eliminar
+                    Sí, eliminar lista
                 </button>
             </div>
         </div>
@@ -221,9 +263,7 @@ let listaActual = null;
 let cantidadSuplentes = 0;
 let modalEliminar = null;
 
-// ============================================================
 // ESCAPE
-// ============================================================
 
 function esc(str) {
     if (str === null || str === undefined) return '';
@@ -235,9 +275,7 @@ function esc(str) {
         .replace(/'/g, '&#x27;');
 }
 
-// ============================================================
 // CARGA INICIAL
-// ============================================================
 
 async function cargarLista() {
     try {
@@ -260,9 +298,7 @@ async function cargarLista() {
     }
 }
 
-// ============================================================
 // POBLAR FORMULARIO
-// ============================================================
 
 function poblarFormulario(l) {
     // Título
@@ -341,9 +377,7 @@ function poblarFormulario(l) {
     document.getElementById('btn-eliminar').style.display = 'inline-block';
 }
 
-// ============================================================
 // FILAS DE POSTULANTES
-// ============================================================
 
 function agregarFilaPostulante(contenedor, grupo, orden, dniInicial = '', nombreInicial = '') {
     const div = document.createElement('div');
@@ -513,9 +547,7 @@ document.getElementById('btn-agregar-suplente').addEventListener('click', () => 
     actualizarBotonSuplente();
 });
 
-// ============================================================
 // SUBMIT — GUARDAR CAMBIOS
-// ============================================================
 
 document.getElementById('formEditar').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -580,11 +612,24 @@ document.getElementById('formEditar').addEventListener('submit', async (e) => {
     }
 });
 
-// ============================================================
 // ELIMINAR
-// ============================================================
+
+// Mostrar/ocultar campo libre al seleccionar "Otro"
+document.querySelectorAll('input[name="motivoRadio"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        const esOtro = document.getElementById('motivo3').checked;
+        document.getElementById('contenedor-motivo-libre').style.display = esOtro ? 'block' : 'none';
+        document.getElementById('error-motivo').style.display = 'none';
+    });
+});
 
 function confirmarEliminar() {
+    // Resetear modal
+    document.querySelectorAll('input[name="motivoRadio"]').forEach(r => r.checked = false);
+    document.getElementById('motivo-libre').value = '';
+    document.getElementById('contenedor-motivo-libre').style.display = 'none';
+    document.getElementById('error-motivo').style.display = 'none';
+
     modalEliminar = modalEliminar ?? new bootstrap.Modal(
         document.getElementById('modalEliminar')
     );
@@ -592,6 +637,24 @@ function confirmarEliminar() {
 }
 
 document.getElementById('btn-confirmar-eliminar').addEventListener('click', async () => {
+    const radioSeleccionado = document.querySelector('input[name="motivoRadio"]:checked');
+
+    // Validar que haya un motivo seleccionado
+    if (!radioSeleccionado) {
+        document.getElementById('error-motivo').style.display = 'block';
+        return;
+    }
+
+    let motivoBaja = radioSeleccionado.value;
+    if (motivoBaja === 'otro') {
+        motivoBaja = document.getElementById('motivo-libre').value.trim();
+        if (!motivoBaja) {
+            document.getElementById('error-motivo').textContent = 'Escribí el motivo de eliminación.';
+            document.getElementById('error-motivo').style.display = 'block';
+            return;
+        }
+    }
+
     const btn = document.getElementById('btn-confirmar-eliminar');
     btn.disabled = true;
 
@@ -599,14 +662,15 @@ document.getElementById('btn-confirmar-eliminar').addEventListener('click', asyn
         const res = await fetch(`/api/listas/${LISTA_ID}`, {
             method: 'DELETE',
             headers: {
+                'Content-Type': 'application/json',
                 'Accept':       'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
             },
+            body: JSON.stringify({ motivo_baja: motivoBaja }),
         });
 
         if (!res.ok) throw new Error(`Error ${res.status}`);
 
-        // Redirigir al índice después de eliminar
         window.location.href = '{{ route("listas.index") }}';
 
     } catch (err) {
@@ -620,9 +684,7 @@ document.getElementById('btn-confirmar-eliminar').addEventListener('click', asyn
     }
 });
 
-// ============================================================
 // UTILIDADES
-// ============================================================
 
 function obtenerDNIs(grupo) {
     return Array.from(
@@ -661,9 +723,7 @@ function mostrarErrores(data) {
     document.getElementById('mensaje').innerHTML = html;
 }
 
-// ============================================================
 // ARRANQUE
-// ============================================================
 
 cargarLista();
 

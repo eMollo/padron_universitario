@@ -13,7 +13,9 @@ class Lista extends Model
 
     protected $table = 'listas';
 
-    protected $fillable = ['anio', 'tipo', 'nombre', 'sigla', 'numero', 'modo_carga', 'id_facultad', 'id_claustro', 'id_apoderado'];
+    protected $fillable = ['anio', 'tipo', 'nombre', 'sigla', 'numero', 
+    'modo_carga', 'id_facultad', 'id_claustro', 'id_apoderado',
+    'motivo_baja', 'eliminado_por'];
 
     public function apoderado() 
     {
@@ -39,4 +41,13 @@ class Lista extends Model
     {
         return $this->hasMany(ListaAval::class, 'id_lista');
     }
+
+    public function eliminadoPor()
+    {
+        return $this->belongsTo(User::class, 'eliminado_por');
+    }
+
+    protected $casts = [
+        'deleted_at' => 'datetime',
+    ];
 }

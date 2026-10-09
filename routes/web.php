@@ -70,6 +70,15 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('id')
         ->name('listas.editar');
 
+    // Solo admin: listas eliminadas
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/listas-eliminadas', [ListaViewController::class, 'eliminadas'])
+            ->name('listas.eliminadas');
+        Route::get('/listas-eliminadas/{id}', [ListaViewController::class, 'verEliminada'])
+            ->whereNumber('id')
+            ->name('listas.ver-eliminada');
+    });
+
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -108,6 +117,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::delete('listas/{id}', [ListaController::class, 'destroy']);
         Route::post('listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
         Route::get('/listas/numeros-disponibles', [ListaController::class, 'numerosDisponibles']);
+        Route::get('listas-eliminadas', [ListaController::class, 'indexEliminados']);
+        Route::get('listas-eliminadas/{id}', [ListaController::class, 'showEliminada']);
 
         Route::post('inscripciones/{id}/restaurar', [InscripcionController::class, 'restaurar']);
         Route::post('padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);

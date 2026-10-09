@@ -30,4 +30,14 @@ class ListaViewController extends Controller
     public function editar(int $id) {
         return view('listas.editar', compact('id'));
     }
+
+    // Pantalla de listas eliminadas
+    public function eliminadas() {
+        return view('listas.eliminadas');
+    }
+
+    // Detalle de una listas eliminada
+    public function verEliminada(int $id) {
+        return view('listas.ver-eliminada', compact('id'));
+    }
 }
