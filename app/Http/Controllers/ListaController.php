@@ -46,7 +46,7 @@ class ListaController extends Controller
 
     //Ver una lista
 
-        public function show($id): JsonResponse {
+    public function show($id): JsonResponse {
         $lista = Lista::with([
             'apoderado',
             'postulantes' => fn($q) => $q->orderBy('tipo')->orderBy('orden'),
@@ -56,18 +56,18 @@ class ListaController extends Controller
             'avales',
             'avales.persona',
         ])->find($id);
- 
+
         if (!$lista) {
             return response()->json([
                 'message' => 'Lista no encontrada'
             ], 404);
         }
- 
-        // Para Consejo Superior: enriquecer cada postulante con la facultad
+
+        // Para Consejo Superior: conectar a cada postulante con la facultad
         // de su inscripción activa en el mismo año y claustro de la lista.
         if ($lista->tipo === 'superior' && $lista->id_claustro) {
             $idsPersonas = $lista->postulantes->pluck('id_persona');
- 
+
             // Una sola query: inscripciones activas del año+claustro para estas personas
             $facultadesPorPersona = \App\Models\Inscripcion::query()
                 ->join('padrones', 'inscripciones.id_padron', '=', 'padrones.id')
@@ -82,16 +82,15 @@ class ListaController extends Controller
                 )
                 ->get()
                 ->keyBy('id_persona');
- 
+
             $lista->postulantes->each(function ($postulante) use ($facultadesPorPersona) {
                 $postulante->facultad_nombre =
                     $facultadesPorPersona[$postulante->id_persona]->facultad_nombre ?? null;
             });
         }
- 
+
         return response()->json($lista);
     }
-
 
     //Crear una lista
 
@@ -141,6 +140,129 @@ class ListaController extends Controller
             'message' => 'Lista creada exitosamente',
             'lista' => $resultado['lista']
         ], 201);
+    }
+
+    // Editar una lista (nombre, sigla, apoderado, postulantes)
+    public function update(Request $request, $id): JsonResponse {
+        $lista = Lista::with([
+            'apoderado',
+            'postulantes',
+        ])->find($id);
+
+        if (!$lista) {
+            return response()->json(['message' => 'Lista no encontrada'], 404);
+        }
+
+        $request->validate([
+            'nombre'   => 'required|string|max:90',
+            'sigla'    => 'nullable|string|max:13',
+
+            'apoderado'            => 'required|array',
+            'apoderado.dni'        => 'required|string',
+            'apoderado.nombre'     => 'required|string',
+            'apoderado.apellido'   => 'required|string',
+            'apoderado.telefono'   => 'nullable|string',
+            'apoderado.email'      => 'nullable|email',
+
+            'postulantes.titulares'       => 'required|array',
+            'postulantes.titulares.*.dni' => 'required|string',
+            'postulantes.suplentes'       => 'nullable|array',
+            'postulantes.suplentes.*.dni' => 'required|string',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Nombre y sigla
+            $lista->nombre = $request->nombre;
+            $lista->sigla  = $request->sigla;
+            $lista->save();
+
+            // 2. Apoderado: buscar o crear por DNI, luego actualizar datos
+            $apoderadoData = $request->apoderado;
+            $apoderado = Persona::firstOrNew([
+                'dni_normalizado' => \App\Support\DniNormalizer::normalizar($apoderadoData['dni'])
+            ]);
+            $apoderado->nombre    = $apoderadoData['nombre'];
+            $apoderado->apellido  = $apoderadoData['apellido'];
+            $apoderado->dni       = $apoderadoData['dni'];
+            $apoderado->telefono  = $apoderadoData['telefono'] ?? null;
+            $apoderado->email     = $apoderadoData['email']    ?? null;
+            $apoderado->save();
+
+            $lista->id_apoderado = $apoderado->id;
+            $lista->save();
+
+            // 3. Postulantes: reemplazar titulares y suplentes
+            // Usamos el mismo servicio de validación para verificar que
+            // los DNIs pertenezcan al padrón habilitado.
+            $validacion = app(\App\Services\Listas\ListaValidationService::class)
+                ->validateAll([
+                    'anio'             => $lista->anio,
+                    'tipo'             => $lista->tipo,
+                    'id_claustro'      => $lista->id_claustro,
+                    'id_facultad'      => $lista->id_facultad,
+                    'postulantes'      => $request->postulantes,
+                    'id_lista_excluir' => $lista->id, // excluir esta lista del chequeo de conflictos
+                ]);
+
+            if (!$validacion['ok']) {
+                DB::rollBack();
+                return response()->json([
+                    'error'   => 'Error en la validación de postulantes',
+                    'details' => $validacion['errors'] ?? [],
+                ], 422);
+            }
+
+            // Borrar postulantes actuales y reemplazar
+            ListaPostulante::where('id_lista', $lista->id)->delete();
+
+            foreach (['titulares', 'suplentes'] as $tipoPostulante) {
+                $tipo_key = $tipoPostulante === 'titulares' ? 'titular' : 'suplente';
+                foreach ($request->postulantes[$tipoPostulante] ?? [] as $index => $item) {
+                    $persona = Persona::where(
+                        'dni_normalizado',
+                        \App\Support\DniNormalizer::normalizar($item['dni'])
+                    )->first();
+
+                    if ($persona) {
+                        ListaPostulante::create([
+                            'id_lista'  => $lista->id,
+                            'id_persona' => $persona->id,
+                            'tipo'      => $tipo_key,
+                            'orden'     => $index + 1,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Lista actualizada correctamente',
+                'lista'   => $lista->fresh(['apoderado', 'postulantes.persona', 'facultad', 'claustro']),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al actualizar la lista',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Soft delete de una lista
+    public function destroy($id): JsonResponse {
+        $lista = Lista::find($id);
+
+        if (!$lista) {
+            return response()->json(['message' => 'Lista no encontrada'], 404);
+        }
+
+        $lista->delete(); // soft delete via SoftDeletes en el modelo
+
+        return response()->json(['message' => 'Lista eliminada correctamente']);
     }
 
     //Para numeración en modo historico

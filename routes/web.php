@@ -104,6 +104,8 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
         Route::post('padrones/importar', [PadronController::class, 'importar']);
         Route::post('listas', [ListaController::class, 'store']);
+        Route::put('listas/{id}', [ListaController::class, 'update']);
+        Route::delete('listas/{id}', [ListaController::class, 'destroy']);
         Route::post('listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
         Route::get('/listas/numeros-disponibles', [ListaController::class, 'numerosDisponibles']);
 

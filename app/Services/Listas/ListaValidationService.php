@@ -208,6 +208,7 @@ class ListaValidationService
     *
     * @return array ['ok'=>bool, 'errors'=>[], 'postulantes'=>[]]
     */
+    
 
     private function validarPostulantes(
         array $postulantesInput,
@@ -318,11 +319,16 @@ class ListaValidationService
         // Conflicto con otras listas
 
         if (!empty($postulantesIds)) {
+            $idListaExcluir = $payload['id_lista_excluir'] ?? null;
+
             $conflictos = ListaPostulante::with(['persona', 'lista'])
                 ->whereIn('id_persona', array_unique($postulantesIds))
-                ->whereHas('lista', function ($q) use ($anio, $tipo) {
+                ->whereHas('lista', function ($q) use ($anio, $tipo, $idListaExcluir) {
                     $q->where('anio', $anio)
                         ->where('tipo', $tipo);
+                    if ($idListaExcluir) {
+                        $q->where('id', '!=', $idListaExcluir);
+                    }
                 })
                 ->get();
 
