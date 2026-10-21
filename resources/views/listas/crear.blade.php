@@ -16,32 +16,16 @@
             <div class="card-header">
                 <strong>Datos de la lista</strong>
             </div>
-
             <div class="card-body">
-
                 <div class="row">
-
                     <div class="col-md-3 mb-3">
                         <label for="anio" class="form-label">Año</label>
-                        <input
-                            type="number"
-                            class="form-control"
-                            id="anio"
-                            name="anio"
-                            value="{{ date('Y') }}"
-                            required
-                        >
+                        <input type="number" class="form-control" id="anio" name="anio"
+                            value="{{ date('Y') }}" required>
                     </div>
-
                     <div class="col-md-3 mb-3">
                         <label for="tipo" class="form-label">Tipo de lista</label>
-
-                        <select
-                            class="form-select"
-                            id="tipo"
-                            name="tipo"
-                            required
-                        >
+                        <select class="form-select" id="tipo" name="tipo" required>
                             <option value="">Seleccionar...</option>
                             <option value="superior">Consejo Superior</option>
                             <option value="directivo">Consejo Directivo</option>
@@ -49,128 +33,55 @@
                             <option value="rector">Rector</option>
                         </select>
                     </div>
-
                     <div class="col-md-3 mb-3">
-                        <label for="modo_carga" class="form-label">
-                            Modo de carga
-                        </label>
-
-                        <select
-                            class="form-select"
-                            id="modo_carga"
-                            name="modo_carga"
-                            required
-                        >
+                        <label for="modo_carga" class="form-label">Modo de carga</label>
+                        <select class="form-select" id="modo_carga" name="modo_carga" required>
                             <option value="normal">Normal</option>
                             <option value="historica">Histórica</option>
                         </select>
                     </div>
-
                     <div class="col-md-3 mb-3" id="contenedor_numero" style="display:none;">
-                        <label for="numero" class="form-label">
-                            Número de lista
-                        </label>
-
-                        <select
-                            class="form-select"
-                            id="numero"
-                            name="numero"
-                        >
+                        <label for="numero" class="form-label">Número de lista</label>
+                        <select class="form-select" id="numero" name="numero">
                             <option value="">Seleccionar número...</option>
                         </select>
                     </div>
-
                 </div>
-
                 <div class="row">
 
-                    {{-- CLAUSTRO --}}
-                    <div
-                        class="col-md-6 mb-3"
-                        id="contenedor_claustro"
-                        style="display:none;"
-                    >
-                        <label for="id_claustro" class="form-label">
-                            Claustro
-                        </label>
-
-                        <select
-                            class="form-select"
-                            id="id_claustro"
-                            name="id_claustro"
-                        >
+                {{-- CLAUSTRO --}}
+                    <div class="col-md-6 mb-3" id="contenedor_claustro" style="display:none;">
+                        <label for="id_claustro" class="form-label">Claustro</label>
+                        <select class="form-select" id="id_claustro" name="id_claustro">
                             <option value="">Seleccionar...</option>
-
                             @foreach ($claustros as $claustro)
-                                <option value="{{ $claustro->id }}">
-                                    {{ $claustro->nombre }}
-                                </option>
+                                <option value="{{ $claustro->id }}">{{ $claustro->nombre }}</option>
                             @endforeach
-
                         </select>
                     </div>
 
                     {{-- FACULTAD --}}
-                    <div
-                        class="col-md-6 mb-3"
-                        id="contenedor_facultad"
-                        style="display:none;"
-                    >
-                        <label for="id_facultad" class="form-label">
-                            Facultad
-                        </label>
-
-                        <select
-                            class="form-select"
-                            id="id_facultad"
-                            name="id_facultad"
-                        >
+                    <div class="col-md-6 mb-3" id="contenedor_facultad" style="display:none;">
+                        <label for="id_facultad" class="form-label">Facultad</label>
+                        <select class="form-select" id="id_facultad" name="id_facultad">
                             <option value="">Seleccionar...</option>
-
                             @foreach ($facultades as $facultad)
-                                <option value="{{ $facultad->id }}">
-                                    {{ $facultad->nombre }}
-                                </option>
+                                <option value="{{ $facultad->id }}">{{ $facultad->nombre }}</option>
                             @endforeach
-
                         </select>
                     </div>
-
                 </div>
-
                 <div class="row">
-
                     <div class="col-md-8 mb-3">
-                        <label for="nombre" class="form-label">
-                            Nombre de la lista
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="nombre"
-                            name="nombre"
-                            maxlength="90"
-                            required
-                        >
+                        <label for="nombre" class="form-label">Nombre de la lista</label>
+                        <input type="text" class="form-control" id="nombre" name="nombre"
+                            maxlength="90" required>
                     </div>
-
                     <div class="col-md-4 mb-3">
-                        <label for="sigla" class="form-label">
-                            Sigla
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="sigla"
-                            name="sigla"
-                            maxlength="10"
-                        >
+                        <label for="sigla" class="form-label">Sigla</label>
+                        <input type="text" class="form-control" id="sigla" name="sigla" maxlength="10">
                     </div>
-
                 </div>
-
             </div>
         </div>
 
@@ -178,84 +89,40 @@
         {{-- APODERADO --}}
 
         <div class="card mb-4">
-
             <div class="card-header">
                 <strong>Apoderado</strong>
             </div>
-
             <div class="card-body">
-
                 <div class="row">
-
                     <div class="col-md-3 mb-3">
-                        <label for="apoderado_dni" class="form-label">
-                            DNI
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="apoderado_dni"
-                            required
-                        >
+                        <label for="apoderado_dni" class="form-label">DNI</label>
+                        <input type="text" class="form-control" id="apoderado_dni" required>
                     </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label for="apoderado_nombre" class="form-label">
-                            Nombre
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="apoderado_nombre"
-                            required
-                        >
+                    {{-- Nombre encontrado por DNI --}}
+                    <div class="col-md-4 mb-3 d-flex align-items-end pb-1">
+                        <span id="apoderado_nombre_lookup" class="text-muted fst-italic small">—</span>
                     </div>
-
-                    <div class="col-md-5 mb-3">
-                        <label for="apoderado_apellido" class="form-label">
-                            Apellido
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="apoderado_apellido"
-                            required
-                        >
-                    </div>
-
                 </div>
-
                 <div class="row">
-
-                    <div class="col-md-6 mb-3">
-                        <label for="apoderado_telefono" class="form-label">
-                            Teléfono
-                        </label>
-
-                        <input
-                            type="text"
-                            class="form-control"
-                            id="apoderado_telefono"
-                        >
+                    <div class="col-md-4 mb-3">
+                        <label for="apoderado_nombre" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="apoderado_nombre" required>
                     </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label for="apoderado_email" class="form-label">
-                            Email
-                        </label>
-
-                        <input
-                            type="email"
-                            class="form-control"
-                            id="apoderado_email"
-                        >
+                    <div class="col-md-5 mb-3">
+                        <label for="apoderado_apellido" class="form-label">Apellido</label>
+                        <input type="text" class="form-control" id="apoderado_apellido" required>
                     </div>
-
                 </div>
-
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="apoderado_telefono" class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="apoderado_telefono">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="apoderado_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="apoderado_email">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -263,15 +130,11 @@
         {{-- TITULARES --}}
 
         <div class="card mb-4">
-
             <div class="card-header">
                 <strong>Titulares</strong>
             </div>
-
             <div class="card-body">
-
                 <div id="titulares"></div>
-
             </div>
         </div>
 
@@ -279,42 +142,24 @@
         {{-- SUPLENTES --}}
 
         <div class="card mb-4">
-
             <div class="card-header d-flex justify-content-between align-items-center">
-
                 <strong>Suplentes</strong>
-
-                <button
-                    type="button"
-                    class="btn btn-sm btn-secondary"
-                    id="agregarSuplente"
-                >
+                <button type="button" class="btn btn-sm btn-secondary" id="agregarSuplente">
                     + Agregar suplente
                 </button>
-
             </div>
-
             <div class="card-body">
-
                 <div id="suplentes"></div>
-
             </div>
         </div>
-
 
 
         {{-- BOTÓN --}}
 
         <div class="mb-5">
-
-            <button
-                type="submit"
-                class="btn btn-primary"
-                id="btnCrear"
-            >
+            <button type="submit" class="btn btn-primary" id="btnCrear">
                 Crear lista
             </button>
-
         </div>
 
     </form>
@@ -324,696 +169,430 @@
 
 <script>
 
+// ESCAPE
+
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
+// LOOKUP DE PERSONA POR DNI (con cache)
+
+const cachePersonas = {};
+
+async function buscarPersonaPorDni(dni) {
+    if (cachePersonas[dni] !== undefined) return cachePersonas[dni];
+    try {
+        const res = await fetch('/api/personas/buscar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept':       'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+            body: JSON.stringify({ dni }),
+        });
+        if (!res.ok) { cachePersonas[dni] = null; return null; }
+        const data = await res.json();
+        const persona = data.resultado?.[0] ?? null;
+        cachePersonas[dni] = persona;
+        return persona;
+    } catch {
+        cachePersonas[dni] = null;
+        return null;
+    }
+}
+
+function adjuntarLookupDni(inputDni, spanNombre) {
+    inputDni.addEventListener('blur', async () => {
+        const dni = inputDni.value.trim();
+        if (!dni) {
+            spanNombre.innerHTML = '<span class="text-muted">—</span>';
+            return;
+        }
+        spanNombre.innerHTML = '<span class="text-muted fst-italic small">Buscando...</span>';
+        const persona = await buscarPersonaPorDni(dni);
+        if (persona) {
+            spanNombre.textContent = `${persona.apellido}, ${persona.nombre}`;
+            spanNombre.className = 'nombre-persona small';
+        } else {
+            spanNombre.innerHTML = '<span class="text-danger small">DNI no encontrado</span>';
+        }
+    });
+}
+
+
+
 document.addEventListener('DOMContentLoaded', function () {
 
-    const tipo = document.getElementById('tipo');
-    const modoCarga = document.getElementById('modo_carga');
+    const tipo              = document.getElementById('tipo');
+    const modoCarga         = document.getElementById('modo_carga');
+    const contenedorClaustro = document.getElementById('contenedor_claustro');
+    const contenedorFacultad = document.getElementById('contenedor_facultad');
+    const contenedorNumero   = document.getElementById('contenedor_numero');
+    const idClaustro        = document.getElementById('id_claustro');
+    const idFacultad        = document.getElementById('id_facultad');
+    const titulares         = document.getElementById('titulares');
+    const suplentes         = document.getElementById('suplentes');
+    const form              = document.getElementById('formCrearLista');
+    const mensaje           = document.getElementById('mensaje');
 
-    const contenedorClaustro =
-        document.getElementById('contenedor_claustro');
-
-    const contenedorFacultad =
-        document.getElementById('contenedor_facultad');
-
-    const contenedorNumero =
-        document.getElementById('contenedor_numero');
-
-    const idClaustro =
-        document.getElementById('id_claustro');
-
-    const idFacultad =
-        document.getElementById('id_facultad');
-
-    const titulares =
-        document.getElementById('titulares');
-
-    const suplentes =
-        document.getElementById('suplentes');
-
-    const form =
-        document.getElementById('formCrearLista');
-
-    const mensaje =
-        document.getElementById('mensaje');
+    // Lookup DNI apoderado
+    adjuntarLookupDni(
+        document.getElementById('apoderado_dni'),
+        document.getElementById('apoderado_nombre_lookup')
+    );
 
 
     // ACTUALIZAR CAMPOS SEGÚN TIPO
 
-    function actualizarTipo() {
 
+    function actualizarTipo() {
         const valor = tipo.value;
 
         contenedorClaustro.style.display = 'none';
         contenedorFacultad.style.display = 'none';
-
         idClaustro.required = false;
         idFacultad.required = false;
 
         if (valor === 'superior') {
-
             contenedorClaustro.style.display = 'block';
             idClaustro.required = true;
-
         }
-
         if (valor === 'directivo') {
-
             contenedorClaustro.style.display = 'block';
             contenedorFacultad.style.display = 'block';
-
             idClaustro.required = true;
             idFacultad.required = true;
-
         }
-
         if (valor === 'decano') {
-
             contenedorFacultad.style.display = 'block';
             idFacultad.required = true;
-
         }
-
-        // rector no necesita ni claustro ni facultad
+        // rector: no necesita ni claustro ni facultad
 
         generarTitulares();
-
         actualizarBotonAgregarSuplente();
-
     }
 
 
     // MODO DE CARGA
 
     function actualizarModoCarga() {
-
         const numero = document.getElementById('numero');
-
         if (modoCarga.value === 'historica') {
-
             contenedorNumero.style.display = 'block';
             numero.required = true;
-
             cargarNumerosDisponibles();
-
         } else {
-
             contenedorNumero.style.display = 'none';
             numero.required = false;
             numero.value = '';
-            //document.getElementById('numero').value = '';
-
         }
-
     }
 
     async function cargarNumerosDisponibles() {
+        const anio       = document.getElementById('anio').value;
+        const tipoValor  = tipo.value;
+        const claustro   = idClaustro.value;
+        const numero     = document.getElementById('numero');
 
-        const anio = document.getElementById('anio').value;
-        const tipoValor = tipo.value;
-        const claustro = idClaustro.value;
+        numero.innerHTML = '<option value="">Seleccionar número...</option>';
 
-        const numero = document.getElementById('numero');
-
-        numero.innerHTML = `
-            <option value="">Seleccionar número...</option>
-        `;
-
-        if (!anio || !tipoValor) {
-            return;
-        }
-
-        if ( 
-            ['superior', 'directivo'].includes(tipoValor) && !claustro
-        ) {
-            return;
-        }
+        if (!anio || !tipoValor) return;
+        if (['superior', 'directivo'].includes(tipoValor) && !claustro) return;
 
         try {
+            const params = new URLSearchParams({ anio, tipo: tipoValor });
+            if (claustro) params.append('id_claustro', claustro);
 
-            const params = new URLSearchParams({
-                anio: anio,
-                tipo: tipoValor
+            const response = await fetch(`/api/listas/numeros-disponibles?${params}`, {
+                headers: { 'Accept': 'application/json' }
             });
-
-            if (claustro) {
-                params.append('id_claustro', claustro);
-            }
-
-            const response = await fetch(
-                `/api/listas/numeros-disponibles?${params.toString()}`,
-                {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error('No se pudieron obtener los numeros disponibles.');
-            }
+            if (!response.ok) throw new Error();
 
             const data = await response.json();
-
-            data.disponibles.forEach(numeroDisponible => {
-
-                const option = document.createElement('option');
-
-                option.value = numeroDisponible;
-                option.textContent = numeroDisponible;
-
-                numero.appendChild(option);
-
+            data.disponibles.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n;
+                opt.textContent = n;
+                numero.appendChild(opt);
             });
 
             if (data.disponibles.length === 0) {
-                
-                numero.innerHTML = `
-                    <option value="">
-                        No hay números disponibles
-                    </option>
-                `;
+                numero.innerHTML = '<option value="">No hay números disponibles</option>';
             }
-        } catch (error) {
-
-            console.error(error);
-
-            numero.innerHTML = `
-                <option value="">
-                    Error al cargar números
-                </option>
-            `;
+        } catch {
+            numero.innerHTML = '<option value="">Error al cargar números</option>';
         }
     }
 
 
+    // ========================================
     // GENERAR TITULARES
+    // ========================================
 
     function generarTitulares() {
-
         titulares.innerHTML = '';
 
         let cantidad = 0;
-
-        const claustroTexto =
-                    idClaustro.options[idClaustro.selectedIndex]?.text
-                    .toLowerCase() || '';
+        const claustroTexto = idClaustro.options[idClaustro.selectedIndex]?.text.toLowerCase() || '';
 
         switch (tipo.value) {
-
             case 'superior':
-
-                if (claustroTexto.includes('graduad')) {
-                    cantidad = 4;
-                } else {
-                    cantidad = 12;
-                }
+                cantidad = claustroTexto.includes('graduad') ? 4 : 12;
                 break;
-
             case 'directivo':
-
-                if (claustroTexto.includes('graduad')) {
-                    cantidad = 1;
-                } else if (
-                    claustroTexto.includes('docente') ||
-                    claustroTexto.includes('estudiante') ||
-                    claustroTexto.includes('nodocente')
-                ) {
-                    cantidad =
-                        claustroTexto.includes('nodocente') ? 3 :
-                        claustroTexto.includes('docente') ? 8 :
-                        claustroTexto.includes('estudiante') ? 4 :
-                        0;
-                }
-
+                if (claustroTexto.includes('nodocente'))   cantidad = 3;
+                else if (claustroTexto.includes('docente')) cantidad = 8;
+                else if (claustroTexto.includes('estudiante')) cantidad = 4;
+                else if (claustroTexto.includes('graduad')) cantidad = 1;
                 break;
-
             case 'decano':
             case 'rector':
                 cantidad = 1;
                 break;
         }
 
-
         for (let i = 1; i <= cantidad; i++) {
-
-            agregarPostulante(
-                titulares,
-                'titulares',
-                i
-            );
-
+            agregarPostulante(titulares, 'titulares', i);
         }
-
     }
 
-    
-function agregarPostulante(contenedor, grupo, orden) {
-    const div = document.createElement('div');
 
-    div.className = 'row mb-2 fila-postulante';
+    // AGREGAR POSTULANTE
 
-    if (grupo === 'suplentes') {
-        div.classList.add('fila-suplente');
+    function agregarPostulante(contenedor, grupo, orden) {
+        const div = document.createElement('div');
+        div.className = 'row mb-2 align-items-center fila-postulante';
+        if (grupo === 'suplentes') div.classList.add('fila-suplente');
+        div.dataset.orden = orden;
+
+        div.innerHTML = `
+            <div class="col-auto" style="min-width:2.5rem;">
+                <span class="text-muted numero-postulante">${orden}</span>
+            </div>
+            <div class="col-md-3">
+                <input
+                    type="text"
+                    class="form-control input-dni"
+                    placeholder="DNI"
+                    data-grupo="${grupo}"
+                    data-orden="${orden}"
+                    data-campo="dni"
+                    required
+                >
+            </div>
+            <div class="col">
+                <span class="nombre-persona text-muted fst-italic small">—</span>
+            </div>
+            ${grupo === 'suplentes' ? `
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-eliminar-suplente">
+                        Eliminar
+                    </button>
+                </div>
+            ` : ''}
+        `;
+
+        // Lookup DNI
+        const inputDni   = div.querySelector('.input-dni');
+        const spanNombre = div.querySelector('.nombre-persona');
+        adjuntarLookupDni(inputDni, spanNombre);
+
+        // Eliminar suplente
+        if (grupo === 'suplentes') {
+            div.querySelector('.btn-eliminar-suplente').addEventListener('click', () => {
+                div.remove();
+                renumerarSuplentes();
+            });
+        }
+
+        contenedor.appendChild(div);
     }
 
-    div.dataset.orden = orden;
 
-    div.innerHTML = `
-        <div class="col-md-1">
-            <label class="form-label numero-postulante">
-                ${orden}
-            </label>
-        </div>
+    // RENUMERAR SUPLENTES
 
-        <div class="col-md-5">
-            <input
-                type="text"
-                class="form-control"
-                data-grupo="${grupo}"
-                data-orden="${orden}"
-                data-campo="dni"
-                placeholder="DNI"
-                required
-            >
-        </div>
-
-        ${
-            grupo === 'suplentes'
-                ? `
-                    <div class="col-md-3">
-                        <button
-                            type="button"
-                            class="btn btn-outline-danger btn-eliminar-suplente"
-                        >
-                            Eliminar
-                        </button>
-                    </div>
-                `
-                : ''
-        }
-    `;
-
-    contenedor.appendChild(div);
-
-    if (grupo === 'suplentes') {
-        const botonEliminar = div.querySelector(
-            '.btn-eliminar-suplente'
-        );
-
-        botonEliminar.addEventListener('click', function () {
-            div.remove();
-            renumerarSuplentes();
+    function renumerarSuplentes() {
+        const filas = suplentes.querySelectorAll('.fila-suplente');
+        filas.forEach((fila, index) => {
+            const nuevoOrden = index + 1;
+            fila.dataset.orden = nuevoOrden;
+            fila.querySelector('.numero-postulante').textContent = nuevoOrden;
+            const inputDni = fila.querySelector('[data-grupo="suplentes"]');
+            if (inputDni) inputDni.dataset.orden = nuevoOrden;
         });
+        cantidadSuplentes = filas.length;
+        actualizarBotonAgregarSuplente();
     }
-}
-
-    
-function renumerarSuplentes() {
-    const filas = suplentes.querySelectorAll('.fila-suplente');
-
-    filas.forEach((fila, index) => {
-        const nuevoOrden = index + 1;
-
-        fila.dataset.orden = nuevoOrden;
-
-        const etiqueta = fila.querySelector('.numero-postulante');
-
-        if (etiqueta) {
-            etiqueta.textContent = nuevoOrden;
-        }
-
-        const inputDni = fila.querySelector(
-            '[data-grupo="suplentes"]'
-        );
-
-        if (inputDni) {
-            inputDni.dataset.orden = nuevoOrden;
-        }
-    });
-
-    cantidadSuplentes = filas.length;
-
-    actualizarBotonAgregarSuplente();
-}
 
 
     // SUPLENTES
 
     let cantidadSuplentes = 0;
 
-    document.getElementById('agregarSuplente')
-        .addEventListener('click', function () {
-
+    document.getElementById('agregarSuplente').addEventListener('click', () => {
         const maximo = obtenerMaxSuplentes();
-
-        if (cantidadSuplentes >= maximo) {
-            return;
-        }
-
-            cantidadSuplentes++;
-
-            agregarPostulante(
-                suplentes,
-                'suplentes',
-                cantidadSuplentes
-            );
-
-            actualizarBotonAgregarSuplente();
-
-        });
+        if (cantidadSuplentes >= maximo) return;
+        cantidadSuplentes++;
+        agregarPostulante(suplentes, 'suplentes', cantidadSuplentes);
+        actualizarBotonAgregarSuplente();
+    });
 
     function obtenerMaxSuplentes() {
-
         const claustro = idClaustro.value;
-
         switch (tipo.value) {
-            case 'superior':
-                if (claustro === '4') {
-                    return 4; //Personas Graduadas
-                }
-
-                return 12; //Docentes, NoDocentes y Estudiantes
-            
+            case 'superior':  return claustro === '4' ? 4 : 12;
             case 'directivo':
-                if (claustro === '1') {
-                    return 8; //Docentes
-                }
-
-                if (claustro === '2') {
-                    return 3; //NoDocentes
-                }
-
-                if (claustro === '3') {
-                    return 4; //Estudiantes
-                }
-
-                if (claustro === '4') {
-                    return 3; //Personas Graduadas
-                }
-
+                if (claustro === '1') return 8;
+                if (claustro === '2') return 3;
+                if (claustro === '3') return 4;
+                if (claustro === '4') return 3;
                 return 0;
-
             case 'decano':
-            case 'rector':
-                return 1;
-
-            default:
-                return 0;
+            case 'rector':    return 1;
+            default:          return 0;
         }
     }
 
     function actualizarBotonAgregarSuplente() {
         const boton = document.getElementById('agregarSuplente');
-
-        if (!boton) {
-            return;
-        }
-
-        const maximo = obtenerMaxSuplentes();
-
-        boton.disabled = cantidadSuplentes >= maximo;
+        if (boton) boton.disabled = cantidadSuplentes >= obtenerMaxSuplentes();
     }
 
-    // CAMBIAR TIPO
 
-    tipo.addEventListener('change', function () {
-        actualizarTipo();
-        cargarNumerosDisponibles();
-    });
+    // ========================================
+    // EVENTOS
+    // ========================================
 
-    idClaustro.addEventListener('change', function () {
-        generarTitulares();
-        cargarNumerosDisponibles();
-    });
-
-    modoCarga.addEventListener('change', function () {
-        actualizarModoCarga();
-        cargarNumerosDisponibles();
-    });
-
-    document.getElementById('anio').addEventListener('change', function () {
-        cargarNumerosDisponibles();
-    });
+    tipo.addEventListener('change', () => { actualizarTipo(); cargarNumerosDisponibles(); });
+    idClaustro.addEventListener('change', () => { generarTitulares(); cargarNumerosDisponibles(); });
+    modoCarga.addEventListener('change', () => { actualizarModoCarga(); cargarNumerosDisponibles(); });
+    document.getElementById('anio').addEventListener('change', cargarNumerosDisponibles);
 
 
+    // ========================================
     // SUBMIT
+    // ========================================
 
     form.addEventListener('submit', async function (event) {
-
         event.preventDefault();
-
         mensaje.innerHTML = '';
 
-        const btn =
-            document.getElementById('btnCrear');
-
+        const btn = document.getElementById('btnCrear');
         btn.disabled = true;
 
         const payload = {
-
-            anio:
-                parseInt(document.getElementById('anio').value),
-
-            tipo:
-                tipo.value,
-
-            nombre:
-                document.getElementById('nombre').value,
-
-            sigla:
-                document.getElementById('sigla').value || null,
-
-            modo_carga:
-                modoCarga.value,
-
-            numero:
-                document.getElementById('numero').value
-                    ? parseInt(document.getElementById('numero').value)
-                    : null,
-
-            id_claustro:
-                idClaustro.value
-                    ? parseInt(idClaustro.value)
-                    : null,
-
-            id_facultad:
-                idFacultad.value
-                    ? parseInt(idFacultad.value)
-                    : null,
-
+            anio:       parseInt(document.getElementById('anio').value),
+            tipo:       tipo.value,
+            nombre:     document.getElementById('nombre').value,
+            sigla:      document.getElementById('sigla').value || null,
+            modo_carga: modoCarga.value,
+            numero:     document.getElementById('numero').value
+                            ? parseInt(document.getElementById('numero').value) : null,
+            id_claustro: idClaustro.value ? parseInt(idClaustro.value) : null,
+            id_facultad: idFacultad.value ? parseInt(idFacultad.value) : null,
             apoderado: {
-
-                dni:
-                    document.getElementById('apoderado_dni').value,
-
-                nombre:
-                    document.getElementById('apoderado_nombre').value,
-
-                apellido:
-                    document.getElementById('apoderado_apellido').value,
-
-                telefono:
-                    document.getElementById('apoderado_telefono').value
-                    || null,
-
-                email:
-                    document.getElementById('apoderado_email').value
-                    || null
+                dni:      document.getElementById('apoderado_dni').value,
+                nombre:   document.getElementById('apoderado_nombre').value,
+                apellido: document.getElementById('apoderado_apellido').value,
+                telefono: document.getElementById('apoderado_telefono').value || null,
+                email:    document.getElementById('apoderado_email').value    || null,
             },
-
             postulantes: {
-
                 titulares: obtenerPostulantes('titulares'),
-
-                suplentes: obtenerPostulantes('suplentes')
-
-            }
-
+                suplentes: obtenerPostulantes('suplentes'),
+            },
         };
 
-
         try {
-
             const response = await fetch('/api/listas', {
-
                 method: 'POST',
-
                 headers: {
-
-                    'Content-Type': 'application/json',
-
-                    'Accept': 'application/json',
-
-                    'X-CSRF-TOKEN':
-                        document.querySelector(
-                            'meta[name="csrf-token"]'
-                        )?.getAttribute('content')
-
+                    'Content-Type':  'application/json',
+                    'Accept':        'application/json',
+                    'X-CSRF-TOKEN':  document.querySelector('meta[name="csrf-token"]')?.content,
                 },
-
-                body: JSON.stringify(payload)
-
+                body: JSON.stringify(payload),
             });
-
 
             const data = await response.json();
 
-
-            if (!response.ok) {
-
-                mostrarError(data);
-
-                return;
-            }
-
+            if (!response.ok) { mostrarError(data); return; }
 
             mensaje.innerHTML = `
-
                 <div class="alert alert-success">
-
-                    <strong>Lista creada correctamente.</strong>
-
-                    
-
-                    <br>
-
+                    <strong>Lista creada correctamente.</strong><br>
                     Número: ${data.lista.numero}
-
                 </div>
-
             `;
 
             form.reset();
-
             titulares.innerHTML = '';
             suplentes.innerHTML = '';
-
             cantidadSuplentes = 0;
-
+            document.getElementById('apoderado_nombre_lookup').innerHTML =
+                '<span class="text-muted">—</span>';
             actualizarTipo();
             actualizarModoCarga();
 
-
         } catch (error) {
-
             console.error(error);
-
-            mensaje.innerHTML = `
-
-                <div class="alert alert-danger">
-
-                    Error de conexión con el servidor.
-
-                </div>
-
-            `;
-
+            mensaje.innerHTML = `<div class="alert alert-danger">Error de conexión con el servidor.</div>`;
         } finally {
-
             btn.disabled = false;
-
         }
-
     });
 
 
+    // ========================================
     // OBTENER POSTULANTES
+    // ========================================
 
     function obtenerPostulantes(grupo) {
-
-        const elementos =
-            document.querySelectorAll(
-                `[data-grupo="${grupo}"]`
-            );
-
+        const elementos = document.querySelectorAll(`[data-grupo="${grupo}"]`);
         const resultado = {};
-
         elementos.forEach(input => {
-
             const orden = input.dataset.orden;
-
-            if (!resultado[orden]) {
-
-                resultado[orden] = {};
-
-            }
-
-            resultado[orden][input.dataset.campo] =
-                input.value;
-
+            if (!resultado[orden]) resultado[orden] = {};
+            resultado[orden][input.dataset.campo] = input.value;
         });
-
-
         return Object.values(resultado);
-
     }
 
 
+    // ========================================
     // MOSTRAR ERROR
-
+    // ========================================
 
     function mostrarError(data) {
-
         let html = '';
-
         if (data.error) {
-
-            html += `
-                <div class="alert alert-danger">
-                    <strong>${data.error}</strong>
-                </div>
-            `;
-
+            html += `<div class="alert alert-danger"><strong>${esc(data.error)}</strong></div>`;
         }
-
-
         if (Array.isArray(data.details)) {
-
             data.details.forEach(error => {
-
                 html += `
-
                     <div class="alert alert-warning">
-
-                        ${error.message || 'Error de validación'}
-
-                        ${error.dni
-                            ? `<br>DNI: ${error.dni}`
-                            : ''
-                        }
-
-                        ${error.nombre
-                            ? `<br>Persona: ${error.nombre}`
-                            : ''
-                        }
-
+                        ${esc(error.message || 'Error de validación')}
+                        ${error.dni    ? `<br>DNI: ${esc(error.dni)}`       : ''}
+                        ${error.nombre ? `<br>Persona: ${esc(error.nombre)}` : ''}
                     </div>
-
                 `;
-
             });
-
         }
-
-
-        if (!html) {
-
-            html = `
-
-                <div class="alert alert-danger">
-
-                    Error desconocido.
-
-                </div>
-
-            `;
-
-        }
-
+        if (!html) html = `<div class="alert alert-danger">Error desconocido.</div>`;
         mensaje.innerHTML = html;
-
     }
 
+
+    // ========================================
+    // ARRANQUE
+    // ========================================
 
     actualizarTipo();
     actualizarModoCarga();

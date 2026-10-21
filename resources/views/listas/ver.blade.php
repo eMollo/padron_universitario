@@ -2,7 +2,6 @@
 
 @section('content')
 
-<div class="container-fluid pb-4" id="app-lista">
 
     {{-- ENCABEZADO --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -20,6 +19,28 @@
             </a>
         </div>
         @endif
+    </div>
+
+    {{-- CAMBIO DE ESTADO (solo admin) --}}
+    @if(auth()->user()?->hasRole('admin'))
+    <div id="bloque-estado" class="d-flex align-items-center gap-2 mb-3" style="display:none !important;">
+        <label class="form-label mb-0 text-muted small">Estado:</label>
+        <select id="selector-estado" class="form-select form-select-sm w-auto">
+            <option value="cargada">Cargada</option>
+            <option value="avales_faltantes">Avales faltantes</option>
+            <option value="oficializada">Oficializada</option>
+        </select>
+        <button class="btn btn-sm btn-outline-primary" onclick="cambiarEstado()">
+            Cambiar
+        </button>
+        <span id="feedback-estado" class="small"></span>
+    </div>
+    @endif
+
+    {{-- ADVERTENCIA LISTA OFICIALIZADA --}}
+    <div id="alerta-oficializada" class="alert alert-warning small py-2 mb-3" style="display:none;">
+        ⚠ Esta lista está <strong>oficializada</strong>. Cualquier modificación debe realizarse
+        con precaución y quedará registrada.
     </div>
 
     {{-- LOADING / ERROR --}}
@@ -346,8 +367,21 @@ function renderLista(l) {
     // Avales
     renderAvales(l.avales ?? []);
 
+    // Bloque de estado (admin)
+    const bloqueEstado = document.getElementById('bloque-estado');
+    if (bloqueEstado) {
+        bloqueEstado.style.display = 'flex';
+        const sel = document.getElementById('selector-estado');
+        if (sel) sel.value = l.estado_lista ?? 'cargada';
+    }
+
+    // Advertencia si está oficializada
+    if (l.estado_lista === 'oficializada') {
+        document.getElementById('alerta-oficializada').style.display = 'block';
+    }
+
     // Mostrar contenido
-    document.getElementById('estado-carga').style.display  = 'none';
+    document.getElementById('estado-carga').style.display   = 'none';
     document.getElementById('contenido-lista').style.display = 'block';
 }
 
@@ -450,6 +484,47 @@ function toggleDetalleAvales() {
 function setText(id, valor) {
     const el = document.getElementById(id);
     if (el) el.textContent = valor ?? '—';
+}
+
+// ============================================================
+// CAMBIO DE ESTADO
+// ============================================================
+
+async function cambiarEstado() {
+    const sel      = document.getElementById('selector-estado');
+    const feedback = document.getElementById('feedback-estado');
+    const nuevoEstado = sel.value;
+
+    feedback.textContent = 'Guardando...';
+    feedback.className   = 'small text-muted';
+
+    try {
+        const res = await fetch(`/api/listas/${LISTA_ID}/estado`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept':       'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+            },
+            body: JSON.stringify({ estado_lista: nuevoEstado }),
+        });
+
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+
+        feedback.textContent = '✓ Estado actualizado';
+        feedback.className   = 'small text-success';
+
+        // Mostrar/ocultar advertencia de oficializada
+        const alerta = document.getElementById('alerta-oficializada');
+        if (alerta) alerta.style.display = nuevoEstado === 'oficializada' ? 'block' : 'none';
+
+        setTimeout(() => { feedback.textContent = ''; }, 2500);
+
+    } catch (e) {
+        feedback.textContent = 'Error al cambiar estado';
+        feedback.className   = 'small text-danger';
+        console.error(e);
+    }
 }
 
 // ============================================================

@@ -10,7 +10,10 @@
         @if(auth()->user()?->hasRole('admin'))
             <div class="d-flex gap-2">
                 <a href="{{ route('listas.eliminadas') }}" class="btn btn-outline-danger btn-sm">
-                    🗑 Ver eliminadas
+                     Ver eliminadas
+                </a>
+                <a href="{{ route('listas.proclamados') }}" class="btn btn-outline-success btn-sm">
+                     Proclamados
                 </a>
                 <a href="{{ route('listas.crear') }}" class="btn btn-primary">
                     + Nueva Lista

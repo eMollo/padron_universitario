@@ -70,8 +70,10 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('id')
         ->name('listas.editar');
 
-    // Solo admin: listas eliminadas
+    // Solo admin: proclamados y listas eliminadas
     Route::middleware(['role:admin'])->group(function () {
+        Route::get('/proclamados', fn() => view('listas.proclamados'))
+            ->name('listas.proclamados');
         Route::get('/listas-eliminadas', [ListaViewController::class, 'eliminadas'])
             ->name('listas.eliminadas');
         Route::get('/listas-eliminadas/{id}', [ListaViewController::class, 'verEliminada'])
@@ -117,8 +119,11 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
         Route::delete('listas/{id}', [ListaController::class, 'destroy']);
         Route::post('listas/{idLista}/avales/importar', [AvalController::class, 'importar']);
         Route::get('/listas/numeros-disponibles', [ListaController::class, 'numerosDisponibles']);
-        Route::get('listas-eliminadas', [ListaController::class, 'indexEliminados']);
+        Route::get('listas-eliminadas', [ListaController::class, 'indexEliminadas']);
         Route::get('listas-eliminadas/{id}', [ListaController::class, 'showEliminada']);
+        Route::patch('listas/{id}/estado', [\App\Http\Controllers\ProclamadosController::class, 'cambiarEstado']);
+        Route::post('proclamados/por-tipo', [\App\Http\Controllers\ProclamadosController::class, 'porTipo']);
+        Route::post('proclamados/{id}/bancas', [\App\Http\Controllers\ProclamadosController::class, 'asignarBancas']);
 
         Route::post('inscripciones/{id}/restaurar', [InscripcionController::class, 'restaurar']);
         Route::post('padrones/previsualizar-baja', [PadronController::class, 'previsualizarBaja']);
