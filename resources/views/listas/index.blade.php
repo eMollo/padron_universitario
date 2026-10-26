@@ -2,7 +2,7 @@
 
 @section('content')
 
-<div class="container-fluid">
+<div class="container-fluid pb-4">
 
     {{-- ENCABEZADO --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -377,7 +377,7 @@ function renderVistaFacultad() {
 function renderAgrupadoPorClaustro(listas) {
     const grupos = agruparPor(listas, l => l.claustro?.nombre ?? 'Sin claustro');
     return Object.entries(grupos).map(([nombre, items]) => `
-        <h6 class="text-muted mt-3 mb-2">${esc(nombre)}</h6>
+        <h3 class="text-muted mt-3 mb-2">${esc(nombre)}</h3>
         <div class="row g-3 mb-3">
             ${items.map(l => cardLista(l)).join('')}
         </div>
