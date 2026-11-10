@@ -65,3 +65,35 @@ if (!res.ok && res.status !== 422) {
 // devolvemos SIEMPRE el JSON (incluso 422)
 return data
 }
+
+async function apiRequest(url, method = 'GET', body = null) {
+
+    const res = await fetch(url, {
+        method,
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute('content'),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+    })
+
+    let data = null
+    try {
+        data = await res.json()
+    } catch (e) {
+        data = null
+    }
+
+    if (!res.ok) {
+        const err = new Error(data?.message ?? `HTTP ${res.status}`)
+        err.status = res.status
+        err.data = data
+        throw err
+    }
+
+    return data
+}

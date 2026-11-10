@@ -28,11 +28,11 @@
 <div class="container-fluid">
 
 <span class="navbar-brand">
-Sistema Electoral
+    Sistema Electoral
 </span>
 
 <button onclick="logout()" class="btn btn-outline-light btn-sm">
-Salir
+    Salir
 </button>
 
 </div>
@@ -48,54 +48,122 @@ Salir
 
 <ul class="nav flex-column">
 
-<li class="nav-item">
-<a class="nav-link" href="/">Dashboard</a>
-</li>
-
-<li class="nav-item">
-    <a href="/personas/buscar" class="nav-link">
-        Buscar Persona
-    </a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link" href="/padrones">Ver Padrones</a>
-</li>
-
-@if(auth()->user()?->hasRole('admin'))
-
+        {{-- Dashboard — todos --}}
     <li class="nav-item">
-    <a class="nav-link" href="/padrones/importar">Importar Padrones</a>
+        <a href="/" class="nav-link">
+            <i class="bi bi-house"></i>
+            Inicio
+        </a>
     </li>
-
+ 
+    {{-- MÓDULO ELECCIONES — admin y consulta --}}
+    @if(auth()->user()?->hasAnyRole(['admin','consulta','consejo_superior']))
+ 
+    <li class="nav-item mt-2">
+        <span class="nav-link text-muted small py-1 px-3 text-uppercase fw-semibold"
+              style="font-size:.65rem; letter-spacing:.05em;">
+            Elecciones
+        </span>
+    </li>
+ 
     <li class="nav-item">
-        <a href="/admin/comparador" class="nav-link">
-            Comparador
+        <a href="/padrones" class="nav-link">
+            <i class="bi bi-journals"></i>
+            Padrones
+        </a>
+    </li>
+ 
+    <li class="nav-item">
+        <a href="/personas/buscar" class="nav-link">
+            <i class="bi bi-search"></i>
+            Buscar persona
         </a>
     </li>
 
-    <!-- Oculto momentaneamente -->
     <li class="nav-item">
+        <a href="/padrones/metricas" class="nav-link">
+            <i class="bi bi-bar-chart"></i>
+            Métricas
+        </a>
+    </li>
+ 
+    <li class="nav-item">
+        {{-- Listas ocultas temporalmente hasta terminar el módulo
         <a href="/listas" class="nav-link">
             <i class="bi bi-card-list"></i>
             Listas
         </a>
+        --}}
     </li>
-
-
+ 
+    @endif
+ 
+    {{-- MÓDULO ELECCIONES — solo admin --}}
+    @if(auth()->user()?->hasRole('admin'))
+ 
+    <li class="nav-item">
+        <a href="/admin/comparador" class="nav-link">
+            <i class="bi bi-arrows-angle-contract"></i>
+            Comparador
+        </a>
+    </li>
+ 
     <li class="nav-item">
         <a href="/admin/comparador/bajas" class="nav-link">
-            Inscripciones dadas de baja
+            <i class="bi bi-person-dash"></i>
+            Bajas
         </a>
     </li>
-
+ 
+    
+ 
+    @endif
+ 
+    {{-- MÓDULO ASISTENCIAS — admin y consejo_superior --}}
+    @if(auth()->user()?->hasAnyRole(['admin','consejo_superior']))
+ 
+    <li class="nav-item mt-2">
+        <span class="nav-link text-muted small py-1 px-3 text-uppercase fw-semibold"
+              style="font-size:.65rem; letter-spacing:.05em;">
+            Asistencias
+        </span>
+    </li>
+ 
+    <li class="nav-item">
+        <a href="/asistencia" class="nav-link">
+            <i class="bi bi-check2-square"></i>
+            Reuniones
+        </a>
+    </li>
+ 
+    <li class="nav-item">
+        <a href="/asistencia/historial" class="nav-link">
+            <i class="bi bi-clock-history"></i>
+            Historial
+        </a>
+    </li>
+ 
+    @endif
+ 
+    {{-- ADMIN — gestión general --}}
+    @if(auth()->user()?->hasRole('admin'))
+ 
+    <li class="nav-item mt-2">
+        <span class="nav-link text-muted small py-1 px-3 text-uppercase fw-semibold"
+              style="font-size:.65rem; letter-spacing:.05em;">
+            Administración
+        </span>
+    </li>
+ 
     <li class="nav-item">
         <a href="/admin/sedes" class="nav-link">
-            Gestionar Sedes
+            <i class="bi bi-building"></i>
+            Sedes
         </a>
     </li>
+ 
+    @endif
 
-@endif
 
 </ul>
 
@@ -103,7 +171,7 @@ Salir
 
 <!-- Contenido -->
 <div class="col-md-10 pt-4">
-@yield('content')
+    @yield('content')
 </div>
 
 </div>

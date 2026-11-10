@@ -8,12 +8,12 @@ class Votacion extends Model
 {
     protected $table = 'votaciones';
     protected $fillable = ['id_reunion', 'descripcion', 'orden'];
- 
+
     public function votos()
     {
         return $this->hasMany(Voto::class, 'id_votacion');
     }
- 
+
     public function resumen(): array
     {
         $conteo = $this->votos()
@@ -21,7 +21,7 @@ class Votacion extends Model
             ->groupBy('voto')
             ->pluck('total', 'voto')
             ->toArray();
- 
+
         return [
             'afirmativo' => $conteo['afirmativo'] ?? 0,
             'negativo'   => $conteo['negativo']   ?? 0,
@@ -29,5 +29,4 @@ class Votacion extends Model
             'total'      => array_sum($conteo),
         ];
     }
-
 }

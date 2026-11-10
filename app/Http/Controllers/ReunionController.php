@@ -53,6 +53,10 @@ class ReunionController extends Controller
             $query->where('tipo', $request->tipo);
         }
 
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
         if ($request->filled('fecha_desde')) {
             $query->whereDate('fecha', '>=', $request->fecha_desde);
         }
@@ -126,7 +130,7 @@ class ReunionController extends Controller
         $ultimosMovimientos = AsistenciaMovimiento::query()
             ->selectRaw('DISTINCT ON (id_persona) id_persona, tipo, created_at')
             ->where('id_reunion', $id)
-            ->orderByRaw('id_persona, created_at DESC')
+            ->orderByRaw('id_persona, created_at DESC, id DESC')
             ->get()
             ->keyBy('id_persona');
 
@@ -145,6 +149,7 @@ class ReunionController extends Controller
         ->where('estado_lista', 'oficializada')
         ->whereNotNull('bancas')
         ->where('bancas', '>', 0)
+        ->orderBy('numero')
         ->get();
 
         // Estructurar: claustro → listas → postulantes con estado actual
@@ -159,7 +164,10 @@ class ReunionController extends Controller
                 $resultado[$claustroNombre] = [];
             }
 
-            $postulantes = $lista->postulantes->map(function ($p) use ($lista, $ultimosMovimientos) {
+            $postulantes = $lista->postulantes
+                ->sortBy(fn($p) => ($p->tipo === 'titular' ? 0 : 1) * 1000 + $p->orden)
+                ->values()
+                ->map(function ($p) use ($lista, $ultimosMovimientos) {
                 $ultimo     = $ultimosMovimientos[$p->id_persona] ?? null;
                 $estado     = $ultimo ? $ultimo->tipo : 'ausente';
                 $proclamado = $p->orden <= $lista->bancas;
@@ -247,20 +255,13 @@ class ReunionController extends Controller
             'tipo'       => 'required|in:entrada,entrada_virtual,salida',
         ]);
 
-        // Cooldown: evitar doble registro accidental en menos de 5 segundos
-        $ultimoMovimiento = AsistenciaMovimiento::where('id_reunion', $id)
-            ->where('id_persona', $request->id_persona)
-            ->latest('created_at')
-            ->first();
-
-        if ($ultimoMovimiento && now()->diffInSeconds($ultimoMovimiento->created_at) < 5) {
-            return response()->json(['message' => 'Movimiento demasiado reciente'], 429);
-        }
-
+        // Sin cooldown: es una acción manual y puede corregirse al instante
+        // (ej: marcar presente por error y pasarlo a salida enseguida).
         $movimiento = AsistenciaMovimiento::create([
             'id_reunion' => $id,
             'id_persona' => $request->id_persona,
             'tipo'       => $request->tipo,
+            'created_at' => now(),
         ]);
 
         // Contador actualizado
@@ -285,7 +286,7 @@ class ReunionController extends Controller
         $presentes = AsistenciaMovimiento::query()
             ->selectRaw('DISTINCT ON (id_persona) id_persona, tipo')
             ->where('id_reunion', $id)
-            ->orderByRaw('id_persona, created_at DESC')
+            ->orderByRaw('id_persona, created_at DESC, id DESC')
             ->get()
             ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
             ->pluck('id_persona');
@@ -327,7 +328,7 @@ class ReunionController extends Controller
         $presentes = AsistenciaMovimiento::query()
             ->selectRaw('DISTINCT ON (id_persona) id_persona, tipo')
             ->where('id_reunion', $origen->id)
-            ->orderByRaw('id_persona, created_at DESC')
+            ->orderByRaw('id_persona, created_at DESC, id DESC')
             ->get()
             ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
             ->pluck('id_persona');
@@ -377,10 +378,14 @@ class ReunionController extends Controller
         // Cooldown 5 segundos
         $ultimo = AsistenciaMovimiento::where('id_reunion', $id)
             ->where('id_persona', $idPersona)
-            ->latest('created_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->first();
 
-        if ($ultimo && now()->diffInSeconds($ultimo->created_at) < 5) {
+        // Segundos transcurridos (con signo explícito: 0 <= x < 5 → doble escaneo)
+        $segundos = $ultimo ? now()->timestamp - $ultimo->created_at->timestamp : null;
+
+        if ($segundos !== null && $segundos >= 0 && $segundos < 5) {
             return response()->json(['message' => 'Escaneo demasiado reciente', 'cooldown' => true], 429);
         }
 
@@ -392,6 +397,7 @@ class ReunionController extends Controller
             'id_reunion' => $id,
             'id_persona' => $idPersona,
             'tipo'       => $nuevoTipo,
+            'created_at' => now(),
         ]);
 
         $persona   = Persona::find($idPersona);
