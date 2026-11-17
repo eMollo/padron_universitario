@@ -31,9 +31,12 @@
     Sistema Electoral
 </span>
 
-<button onclick="logout()" class="btn btn-outline-light btn-sm">
+<div class="d-flex gap-2">
+    <a href="/mi-cuenta" class="btn btn-outline-light btn-sm">Mi cuenta</a>
+    <button onclick="logout()" class="btn btn-outline-light btn-sm">
     Salir
-</button>
+    </button>
+</div>
 
 </div>
 
@@ -156,6 +159,13 @@
     </li>
  
     <li class="nav-item">
+        <a href="/admin/usuarios" class="nav-link">
+            <i class="bi bi-people"></i>
+            Usuarios
+        </a>
+    </li>
+
+    <li class="nav-item">
         <a href="/admin/sedes" class="nav-link">
             <i class="bi bi-building"></i>
             Sedes
@@ -163,7 +173,6 @@
     </li>
  
     @endif
-
 
 </ul>
 

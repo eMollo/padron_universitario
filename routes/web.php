@@ -21,6 +21,9 @@ use App\Http\Controllers\ListaViewController;
 use App\Http\Controllers\ProclamadosController;
 use App\Http\Controllers\ReunionController;
 use App\Http\Controllers\ReunionViewController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\CuentaController;
+use App\Http\Middleware\EnsureUserIsActive;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,7 +43,7 @@ Route::get('/test-auth', fn() => auth()->check() ? 'LOGUEADO' : 'NO LOGUEADO');
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
 
     /*
     |----------------------------------------------------------------------
@@ -48,6 +51,8 @@ Route::middleware(['auth'])->group(function () {
     |----------------------------------------------------------------------
     */
     Route::get('/', fn() => view('dashboard.index'))->name('dashboard');
+    Route::get('/mi-cuenta', fn() => view('cuenta.mi-cuenta'))
+        ->name('cuenta.mi-cuenta');
 
     /*
     |----------------------------------------------------------------------
@@ -104,6 +109,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/comparador', [AdminController::class, 'comparador']);
         Route::get('/admin/comparador/bajas', fn() => view('admin.padron-bajas'));
         Route::get('/admin/sedes', fn() => view('admin.sedes'));
+        Route::get('/admin/usuarios', fn() => view('admin.usuarios'))
+            ->name('admin.usuarios');
 
         // Listas — gestión
         Route::get('/listas/crear', [ListaViewController::class, 'crear'])
@@ -128,7 +135,7 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth'])->prefix('api')->group(function () {
+Route::middleware(['auth', EnsureUserIsActive::class])->prefix('api')->group(function () {
 
     /*
     |----------------------------------------------------------------------
@@ -181,6 +188,14 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
 
         // Asistencia — solo admin: gestionar tipos de comisión
         Route::post('tipos-reunion', [ReunionController::class, 'storeTipoReunion']);
+
+        // Usuarios
+        Route::get('usuarios', [UsuarioController::class, 'index']);
+        Route::post('usuarios', [UsuarioController::class, 'store']);
+        Route::put('usuarios/{id}', [UsuarioController::class, 'update']);
+        Route::patch('usuarios/{id}/estado', [UsuarioController::class, 'cambiarEstado']);
+        Route::post('usuarios/{id}/password', [UsuarioController::class, 'resetPassword']);
+
     });
 
     /*
@@ -265,4 +280,7 @@ Route::middleware(['auth'])->prefix('api')->group(function () {
     Route::get('reuniones/{id}/participantes', [ReunionController::class, 'participantes']);
     Route::get('reuniones/{id}/orden-palabra', [ReunionController::class, 'ordenPalabra']);
     Route::get('reuniones/{id}/votaciones', [ReunionController::class, 'votaciones']);
+
+    // Mi cuenta
+    Route::post('mi-cuenta/password', [CuentaController::class, 'cambiarPassword']);
 });
