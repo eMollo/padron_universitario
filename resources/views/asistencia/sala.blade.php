@@ -5,8 +5,8 @@
 <style>
     .persona-row { cursor: pointer; transition: background 0.15s; }
     .persona-row:hover { background: rgba(0,0,0,.04); }
-    .persona-row.presente     { background: #d1e7dd; }
-    .persona-row.presente_virtual { background: #cff4fc; }
+    .persona-row.entrada         { background: #d1e7dd; }
+    .persona-row.entrada_virtual { background: #cff4fc; }
     .badge-proclamado { font-size: .65rem; vertical-align: middle; }
     .contador-quorum {
         font-size: 2.5rem;
@@ -39,14 +39,14 @@
             {{-- Botones --}}
             <a href="/asistencia/{{ $id }}/qr"
                target="_blank" class="btn btn-outline-secondary btn-sm">
-                QR
+                📷 QR
             </a>
             @if(auth()->user()?->hasAnyRole(['admin','consejo_superior']))
             <button class="btn btn-outline-warning btn-sm" onclick="abrirModalSalidaMasiva()">
-                Salida general
+                ⬛ Salida masiva
             </button>
             <button class="btn btn-outline-danger btn-sm" onclick="abrirModalCerrar()">
-                Cerrar reunión
+                🔒 Cerrar reunión
             </button>
             @endif
         </div>
@@ -196,11 +196,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body d-grid gap-2">
-                <button class="btn btn-success"
+                <div id="modal-estado-aviso" class="alert alert-warning small py-2 mb-0" style="display:none;"></div>
+                <button class="btn btn-success" id="btn-entrada"
                     onclick="registrarMovimiento(personaSeleccionada, 'entrada')">
                     Presente
                 </button>
-                <button class="btn btn-info"
+                <button class="btn btn-info" id="btn-entrada-virtual"
                     onclick="registrarMovimiento(personaSeleccionada, 'entrada_virtual')">
                     Presente Virtual
                 </button>
@@ -234,7 +235,9 @@ function esc(str) {
         .replace(/'/g, '&#x27;');
 }
 
+// ============================================================
 // CARGA INICIAL
+// ============================================================
 
 async function cargarSala() {
     try {
@@ -273,7 +276,9 @@ async function cargarSala() {
     }
 }
 
+// ============================================================
 // RENDER ASISTENCIA
+// ============================================================
 
 function renderAsistencia(participantes, personasExtra) {
     const cont = document.getElementById('contenido-asistencia');
@@ -285,14 +290,17 @@ function renderAsistencia(participantes, personasExtra) {
         listas.forEach(lista => {
             html += `
                 <div class="mb-3">
-                    <div class="text-muted small mb-1 fw-semibold">
-                        Lista #${esc(lista.numero)} — ${esc(lista.nombre)}
-                        ${lista.sigla ? `(${esc(lista.sigla)})` : ''}
-                        <span class="ms-2">· ${lista.bancas} banca${lista.bancas !== 1 ? 's' : ''}</span>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="text-muted small fw-semibold">
+                            Lista #${esc(lista.numero)} — ${esc(lista.nombre)}
+                            ${lista.sigla ? `(${esc(lista.sigla)})` : ''}
+                            <span class="ms-2">· ${lista.bancas} banca${lista.bancas !== 1 ? 's' : ''}</span>
+                        </div>
+                        ${badgeCupo(lista.id_lista, lista.postulantes.filter(estaPresente).length, lista.cupo ?? lista.bancas)}
                     </div>
                     <table class="table table-sm table-hover mb-0">
                         <tbody>
-                            ${lista.postulantes.map(p => filaPersona(p)).join('')}
+                            ${lista.postulantes.map(p => filaPersona(p, lista.id_lista)).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -317,7 +325,7 @@ function renderAsistencia(participantes, personasExtra) {
     cont.innerHTML = html;
 }
 
-function filaPersona(p) {
+function filaPersona(p, idLista) {
     const estado    = p.estado ?? 'ausente';
     const claseRow  = ['entrada', 'entrada_virtual'].includes(estado) ? estado : '';
     const badgeEstado = badgeParaEstado(estado);
@@ -328,6 +336,7 @@ function filaPersona(p) {
         <tr class="persona-row ${claseRow}"
             id="row-persona-${p.id}"
             data-id="${p.id}"
+            data-lista="${idLista ?? ''}"
             data-nombre="${esc(p.apellido)}, ${esc(p.nombre)}"
             onclick="abrirModalEstadoDesdeFila(this)"
         >
@@ -355,7 +364,55 @@ function badgeParaEstado(estado) {
     }
 }
 
+// ============================================================
+// CUPO DE PRESENTES POR LISTA
+// Cada lista puede tener presentes hasta su cupo (sus bancas; Decano: 2),
+// sin importar si son titulares, suplentes o una mezcla.
+// El servidor es quien lo hace cumplir; acá se muestra y se evita ofrecer lo imposible.
+// ============================================================
+
+function ocupadosEnLista(idLista) {
+    return Array.from(document.querySelectorAll(`tr[data-lista="${idLista}"]`))
+        .filter(f => f.classList.contains('entrada') || f.classList.contains('entrada_virtual'))
+        .length;
+}
+
+function badgeCupo(idLista, ocupados, cupo) {
+    const clase = ocupados > cupo
+        ? 'bg-danger'
+        : (ocupados === cupo ? 'bg-warning text-dark' : 'bg-light text-dark border');
+
+    return `<span class="badge ${clase}" id="cupo-${idLista}" data-cupo="${cupo}"
+                  title="Presentes de esta lista / lugares disponibles">Presentes ${ocupados} / ${cupo}</span>`;
+}
+
+function actualizarCupoLista(idLista) {
+    if (!idLista) return;
+    const badge = document.getElementById(`cupo-${idLista}`);
+    if (!badge) return;
+    badge.outerHTML = badgeCupo(idLista, ocupadosEnLista(idLista), parseInt(badge.dataset.cupo, 10));
+}
+
+// Texto explicando por qué no se puede sumar a esta persona; '' si se puede
+function motivoBloqueoCupo(idPersona) {
+    const fila    = document.getElementById(`row-persona-${idPersona}`);
+    const idLista = fila?.dataset.lista;
+    const badge   = idLista ? document.getElementById(`cupo-${idLista}`) : null;
+    if (!fila || !badge) return '';
+
+    // Ya está presente (ej: pasar de presente a virtual): no ocupa un lugar nuevo
+    if (fila.classList.contains('entrada') || fila.classList.contains('entrada_virtual')) return '';
+
+    const cupo = parseInt(badge.dataset.cupo, 10);
+    if (ocupadosEnLista(idLista) < cupo) return '';
+
+    const lugares = cupo === 1 ? 'su único lugar ocupado' : `sus ${cupo} lugares ocupados`;
+    return `La lista ya tiene ${lugares}. Para sumar a esta persona, primero marcá la salida de alguien de la lista.`;
+}
+
+// ============================================================
 // MODAL DE ESTADO
+// ============================================================
 
 // Lee id y nombre desde data-attributes (evita romper el JS con apellidos como D'ANGELO)
 function abrirModalEstadoDesdeFila(fila) {
@@ -365,11 +422,22 @@ function abrirModalEstadoDesdeFila(fila) {
 function abrirModalEstado(idPersona, nombre) {
     personaSeleccionada = idPersona;
     document.getElementById('modal-estado-nombre').textContent = nombre;
+
+    // Lista completa: no se ofrece "Presente" ni "Virtual" (la salida sí queda disponible)
+    const bloqueo = motivoBloqueoCupo(idPersona);
+    const aviso   = document.getElementById('modal-estado-aviso');
+    aviso.textContent   = bloqueo;
+    aviso.style.display = bloqueo ? 'block' : 'none';
+    ['btn-entrada', 'btn-entrada-virtual'].forEach(id => {
+        document.getElementById(id).disabled = !!bloqueo;
+    });
     modalEstado = modalEstado ?? new bootstrap.Modal(document.getElementById('modalEstado'));
     modalEstado.show();
 }
 
+// ============================================================
 // REGISTRAR MOVIMIENTO
+// ============================================================
 
 async function registrarMovimiento(idPersona, tipo) {
     modalEstado?.hide();
@@ -384,12 +452,17 @@ async function registrarMovimiento(idPersona, tipo) {
         actualizarFilaPersona(idPersona, tipo);
 
     } catch (err) {
-        if (err.status === 429) {
+        console.error(err);
+
+        if (err.status === 422) {
+            // Cupo de la lista completo (u otra regla): se muestra el motivo que da el servidor
+            alert(err.data?.message ?? err.message);
+            if (err.data?.cupo) cargarSala();   // la pantalla estaba desactualizada: se vuelve a leer
+        } else if (err.status === 429) {
             alert('Movimiento demasiado reciente. Esperá unos segundos.');
         } else {
             alert('Error al registrar el movimiento.');
         }
-        console.error(err);
     }
 }
 
@@ -400,13 +473,17 @@ function actualizarFilaPersona(idPersona, tipo) {
     fila.className = `persona-row ${['entrada','entrada_virtual'].includes(tipo) ? tipo : ''}`;
     const badgeCell = fila.querySelector('td:last-child');
     if (badgeCell) badgeCell.innerHTML = badgeParaEstado(tipo);
+
+    actualizarCupoLista(fila.dataset.lista);
 }
 
 function actualizarContador(presentes) {
     document.getElementById('contador-presentes').textContent = presentes;
 }
 
+// ============================================================
 // SALIDA MASIVA / TRASPASAR
+// ============================================================
 
 async function abrirModalSalidaMasiva() {
     // Cargar reuniones abiertas para poder traspasar
@@ -435,10 +512,15 @@ document.getElementById('btn-confirmar-salida-masiva').addEventListener('click',
 
     try {
         if (destino) {
-            await apiRequest('/api/reuniones/traspasar-presentes', 'POST', {
+            const r = await apiRequest('/api/reuniones/traspasar-presentes', 'POST', {
                 id_reunion_origen:  REUNION_ID,
                 id_reunion_destino: parseInt(destino),
             });
+
+            if (r.omitidos?.length) {
+                alert('No entraron a la otra reunión porque la lista ya tenía todos sus lugares ocupados:\n\n' +
+                      r.omitidos.join('\n'));
+            }
         } else {
             await apiRequest(`/api/reuniones/${REUNION_ID}/salida-masiva`, 'POST');
         }
@@ -452,7 +534,9 @@ document.getElementById('btn-confirmar-salida-masiva').addEventListener('click',
     }
 });
 
+// ============================================================
 // CERRAR REUNIÓN
+// ============================================================
 
 function abrirModalCerrar() {
     modalCerrar = modalCerrar ?? new bootstrap.Modal(document.getElementById('modalCerrar'));
@@ -469,7 +553,9 @@ document.getElementById('btn-confirmar-cerrar').addEventListener('click', async 
     }
 });
 
+// ============================================================
 // ORDEN DE PALABRA
+// ============================================================
 
 async function cargarOrdenPalabra() {
     const turnos = await apiRequest(`/api/reuniones/${REUNION_ID}/orden-palabra`);
@@ -526,7 +612,9 @@ async function atenderTurno(turnoId) {
     cargarOrdenPalabra();
 }
 
+// ============================================================
 // HELPERS DE PRESENTES
+// ============================================================
 
 async function refrescarParticipantes() {
     const data = await apiRequest(`/api/reuniones/${REUNION_ID}/participantes`);
@@ -587,8 +675,9 @@ function poblarSelectOradores(data) {
     });
 }
 
-
+// ============================================================
 // VOTACIONES NOMINALES (solo sesiones)
+// ============================================================
 
 async function cargarVotaciones() {
     try {

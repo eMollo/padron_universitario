@@ -60,4 +60,15 @@ class Reunion extends Model
             ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
             ->count();
     }
+
+    /**
+     * Ids de las personas presentes ahora (último movimiento = entrada o entrada_virtual).
+     */
+    public function idsPresentes(): \Illuminate\Support\Collection
+    {
+        return $this->estadoActualPresentes()
+            ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
+            ->keys()
+            ->values();
+    }
 }

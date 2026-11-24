@@ -143,7 +143,9 @@ function setText(id, valor) {
     if (el) el.textContent = valor ?? '—';
 }
 
+// ============================================================
 // CARGA
+// ============================================================
 
 async function cargarDetalle() {
     try {
@@ -183,7 +185,9 @@ async function cargarDetalle() {
     }
 }
 
+// ============================================================
 // ENCABEZADO
+// ============================================================
 
 function renderEncabezado(reunion) {
     const color    = COLORES_TIPO[reunion.tipo] ?? 'secondary';
@@ -195,7 +199,9 @@ function renderEncabezado(reunion) {
         `${formatearFecha(reunion.fecha)} · ${reunion.hora_inicio ?? ''} → ${reunion.hora_fin ?? 'en curso'}`;
 }
 
+// ============================================================
 // DATOS GENERALES
+// ============================================================
 
 function renderDatosGenerales(reunion) {
     const color    = COLORES_TIPO[reunion.tipo] ?? 'secondary';
@@ -215,12 +221,16 @@ function renderDatosGenerales(reunion) {
         : '<span class="badge bg-success">Abierta</span>';
 }
 
+// ============================================================
 // RESUMEN DE PRESENCIA
+// ============================================================
 
 function renderResumenPresencia(participantes, presentes) {
     const cont = document.getElementById('resumen-presencia');
 
-    // Contar total de participantes habilitados y cuántos estuvieron presentes
+    // Habilitados = solo los proclamados (la "P" de la sala: titulares y suplentes dentro
+    // de las bancas de cada lista). Los presentes se cuentan entre todos los integrantes
+    // de las listas, porque en lista abierta también puede asistir quien no fue proclamado.
     let totalHabilitados = 0;
     let totalPresentes   = 0;
     let totalVirtuales   = 0;
@@ -228,7 +238,7 @@ function renderResumenPresencia(participantes, presentes) {
     Object.values(participantes).forEach(listas => {
         listas.forEach(lista => {
             lista.postulantes.forEach(p => {
-                totalHabilitados++;
+                if (p.proclamado) totalHabilitados++;
                 if (p.estado === 'entrada')         totalPresentes++;
                 if (p.estado === 'entrada_virtual') totalVirtuales++;
             });
@@ -256,7 +266,7 @@ function renderResumenPresencia(participantes, presentes) {
             <div class="col-6">
                 <div class="border rounded p-2">
                     <div class="fs-3 fw-bold text-muted">${totalHabilitados}</div>
-                    <div class="text-muted small">Habilitados</div>
+                    <div class="text-muted small" title="Total de proclamados (titulares y suplentes)">Habilitados</div>
                 </div>
             </div>
             <div class="col-6">
@@ -269,7 +279,9 @@ function renderResumenPresencia(participantes, presentes) {
     `;
 }
 
+// ============================================================
 // TABLA DE ASISTENTES
+// ============================================================
 
 function renderAsistentes(participantes, personasExtra) {
     const cont     = document.getElementById('tabla-asistentes');
@@ -361,7 +373,9 @@ function badgeEstado(estado) {
     }
 }
 
+// ============================================================
 // VOTACIONES
+// ============================================================
 
 function renderVotaciones(votaciones, tipoReunion) {
     // Resumen en card superior
@@ -440,7 +454,9 @@ function badgeVoto(voto) {
     }
 }
 
+// ============================================================
 // ORDEN DE PALABRA
+// ============================================================
 
 function renderOrdenPalabra(turnos) {
     const card = document.getElementById('card-orden-palabra');
@@ -477,7 +493,9 @@ function renderOrdenPalabra(turnos) {
     `;
 }
 
+// ============================================================
 // ARRANQUE
+// ============================================================
 
 cargarDetalle();
 

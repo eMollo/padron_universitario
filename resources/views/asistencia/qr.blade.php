@@ -91,6 +91,10 @@ async function procesarDni() {
     } catch (err) {
         if (err.status === 429) {
             mostrarResultado('warning', 'Escaneo demasiado rápido. Esperá un momento.');
+        } else if (err.status === 422) {
+            // Cupo de la lista completo (u otra regla): se muestra el motivo del servidor
+            const quien = err.data?.persona ? `${err.data.persona}: ` : '';
+            mostrarResultado('warning', quien + err.message);
         } else {
             mostrarResultado('danger', 'Error al registrar.');
         }

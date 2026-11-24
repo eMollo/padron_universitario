@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use App\Models\Reunion;
 use App\Models\TipoReunion;
@@ -17,6 +18,9 @@ use App\Models\Voto;
 
 class ReunionController extends Controller
 {
+    // Clave del bloqueo (advisory lock) que serializa los movimientos de una reunión
+    private const LOCK_ASISTENCIA = 1001;
+
     // =====================================================
     // TIPOS DE REUNIÓN (comisiones)
     // =====================================================
@@ -191,6 +195,7 @@ class ReunionController extends Controller
                 'nombre'    => $lista->nombre,
                 'sigla'     => $lista->sigla,
                 'bancas'    => $lista->bancas,
+                'cupo'      => $this->cupoDeLista($lista),
                 'tipo'      => $lista->tipo,
                 'postulantes' => $postulantes->values(),
             ];
@@ -257,12 +262,35 @@ class ReunionController extends Controller
 
         // Sin cooldown: es una acción manual y puede corregirse al instante
         // (ej: marcar presente por error y pasarlo a salida enseguida).
-        $movimiento = AsistenciaMovimiento::create([
-            'id_reunion' => $id,
-            'id_persona' => $request->id_persona,
-            'tipo'       => $request->tipo,
-            'created_at' => now(),
-        ]);
+        $idPersona  = (int) $request->id_persona;
+        $error      = null;
+        $movimiento = null;
+
+        DB::transaction(function () use ($reunion, $id, $request, $idPersona, &$error, &$movimiento) {
+            // Un movimiento a la vez por reunión: evita que dos pedidos simultáneos
+            // (por ejemplo QR y pantalla) se salteen el cupo de una lista.
+            DB::select('select pg_advisory_xact_lock(?, ?)', [self::LOCK_ASISTENCIA, (int) $id]);
+
+            // Cupo: solo al sumar a alguien como presente (no al marcar salida)
+            if (in_array($request->tipo, ['entrada', 'entrada_virtual'], true)) {
+                $error = $this->mensajeSiExcedeCupo($reunion, $idPersona, $reunion->idsPresentes());
+
+                if ($error !== null) {
+                    return;
+                }
+            }
+
+            $movimiento = AsistenciaMovimiento::create([
+                'id_reunion' => $id,
+                'id_persona' => $idPersona,
+                'tipo'       => $request->tipo,
+                'created_at' => now(),
+            ]);
+        });
+
+        if ($error !== null) {
+            return response()->json(['message' => $error, 'cupo' => true], 422);
+        }
 
         // Contador actualizado
         $presentes = $reunion->contadorPresentes();
@@ -333,8 +361,16 @@ class ReunionController extends Controller
             ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
             ->pluck('id_persona');
 
-        $now = now();
-        DB::transaction(function () use ($presentes, $origen, $destino, $now) {
+        $now         = now();
+        $omitidos    = [];
+        $trasladados = 0;
+
+        DB::transaction(function () use ($presentes, $origen, $destino, $now, &$omitidos, &$trasladados) {
+            // Un movimiento a la vez en la reunión destino (por el cupo de las listas)
+            DB::select('select pg_advisory_xact_lock(?, ?)', [self::LOCK_ASISTENCIA, (int) $destino->id]);
+
+            $presentesDestino = $destino->idsPresentes();
+
             foreach ($presentes as $idPersona) {
                 // Salida en origen
                 AsistenciaMovimiento::create([
@@ -343,20 +379,39 @@ class ReunionController extends Controller
                     'tipo'       => 'salida',
                     'created_at' => $now,
                 ]);
-                // Entrada en destino
+
+                // Entrada en destino, solo si la lista de la persona todavía tiene lugar
+                $error = $this->mensajeSiExcedeCupo($destino, (int) $idPersona, $presentesDestino);
+
+                if ($error !== null) {
+                    $omitidos[] = (int) $idPersona;
+                    continue;
+                }
+
                 AsistenciaMovimiento::create([
                     'id_reunion' => $destino->id,
                     'id_persona' => $idPersona,
                     'tipo'       => 'entrada',
                     'created_at' => $now,
                 ]);
+
+                $presentesDestino->push((int) $idPersona);
+                $trasladados++;
             }
         });
 
+        $nombresOmitidos = Persona::whereIn('id', $omitidos)
+            ->get()
+            ->map(fn($p) => "{$p->apellido}, {$p->nombre}")
+            ->values();
+
         return response()->json([
-            'message'   => 'Presentes traspasados correctamente',
-            'cantidad'  => $presentes->count(),
-            'destino'   => $destino->nombre,
+            'message'  => count($omitidos) > 0
+                ? 'Presentes traspasados; algunos no entraron por el cupo de su lista'
+                : 'Presentes traspasados correctamente',
+            'cantidad' => $trasladados,
+            'omitidos' => $nombresOmitidos,
+            'destino'  => $destino->nombre,
         ]);
     }
 
@@ -389,16 +444,44 @@ class ReunionController extends Controller
             return response()->json(['message' => 'Escaneo demasiado reciente', 'cooldown' => true], 429);
         }
 
-        // Toggle: si está presente → salida; si no → entrada
-        $estaPresente = $ultimo && in_array($ultimo->tipo, ['entrada', 'entrada_virtual']);
-        $nuevoTipo    = $estaPresente ? 'salida' : 'entrada';
+        $idPersona = (int) $idPersona;
+        $error     = null;
+        $nuevoTipo = 'entrada';
 
-        $movimiento = AsistenciaMovimiento::create([
-            'id_reunion' => $id,
-            'id_persona' => $idPersona,
-            'tipo'       => $nuevoTipo,
-            'created_at' => now(),
-        ]);
+        DB::transaction(function () use ($reunion, $id, $idPersona, &$error, &$nuevoTipo) {
+            DB::select('select pg_advisory_xact_lock(?, ?)', [self::LOCK_ASISTENCIA, (int) $id]);
+
+            // Toggle: si está presente → salida; si no → entrada
+            $presentes    = $reunion->idsPresentes();
+            $estaPresente = $presentes->contains($idPersona);
+            $nuevoTipo    = $estaPresente ? 'salida' : 'entrada';
+
+            // Cupo: solo al sumar a alguien como presente
+            if (!$estaPresente) {
+                $error = $this->mensajeSiExcedeCupo($reunion, $idPersona, $presentes);
+
+                if ($error !== null) {
+                    return;
+                }
+            }
+
+            AsistenciaMovimiento::create([
+                'id_reunion' => $id,
+                'id_persona' => $idPersona,
+                'tipo'       => $nuevoTipo,
+                'created_at' => now(),
+            ]);
+        });
+
+        if ($error !== null) {
+            $rechazada = Persona::find($idPersona);
+
+            return response()->json([
+                'message' => $error,
+                'cupo'    => true,
+                'persona' => $rechazada ? "{$rechazada->apellido}, {$rechazada->nombre}" : null,
+            ], 422);
+        }
 
         $persona   = Persona::find($idPersona);
         $presentes = $reunion->contadorPresentes();
@@ -514,5 +597,55 @@ class ReunionController extends Controller
             ->map(fn($v) => array_merge($v->toArray(), ['resumen' => $v->resumen()]));
 
         return response()->json($votaciones);
+    }
+
+    // =====================================================
+    // CUPO DE PRESENTES POR LISTA (lista abierta)
+    // =====================================================
+
+    /**
+     * Lugares que puede ocupar una lista en una reunión: sus bancas, sin importar
+     * si van titulares, suplentes o una mezcla. Excepción: en Decano pueden ir
+     * el titular y el suplente (2).
+     */
+    private function cupoDeLista(Lista $lista): int
+    {
+        return $lista->tipo === 'decano' ? 2 : (int) $lista->bancas;
+    }
+
+    /**
+     * Si dejar presente a $idPersona excede el cupo de alguna de sus listas,
+     * devuelve el mensaje de error; si se puede, devuelve null.
+     * $presentes: ids de quienes están presentes ahora en la reunión.
+     */
+    private function mensajeSiExcedeCupo(Reunion $reunion, int $idPersona, Collection $presentes): ?string
+    {
+        // Ya está presente (ej: pasa de presente a virtual): no ocupa un lugar nuevo
+        if ($presentes->contains($idPersona)) {
+            return null;
+        }
+
+        // Mismo criterio de listas que usa la pantalla de participantes
+        $listas = Lista::with('postulantes:id,id_lista,id_persona')
+            ->whereIn('tipo', ['superior', 'decano'])
+            ->where('anio', $reunion->fecha->year)
+            ->where('estado_lista', 'oficializada')
+            ->where('bancas', '>', 0)
+            ->whereHas('postulantes', fn($q) => $q->where('id_persona', $idPersona))
+            ->get();
+
+        foreach ($listas as $lista) {
+            $cupo     = $this->cupoDeLista($lista);
+            $ocupados = $lista->postulantes->whereIn('id_persona', $presentes->all())->count();
+
+            if ($ocupados >= $cupo) {
+                $lugares = $cupo === 1 ? 'su único lugar ocupado' : "sus {$cupo} lugares ocupados";
+
+                return "La lista #{$lista->numero} ({$lista->nombre}) ya tiene {$lugares}. "
+                     . 'Marcá la salida de alguien de esa lista antes de sumar a otra persona.';
+            }
+        }
+
+        return null;
     }
 }

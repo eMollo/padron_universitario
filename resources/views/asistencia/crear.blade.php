@@ -88,57 +88,120 @@
 
 <script>
 
-// Pre-llenar desde query params si viene de la grilla
-const params = new URLSearchParams(window.location.search);
-if (params.get('tipo')) {
-    document.getElementById('tipo').value = params.get('tipo');
-    document.getElementById('tipo').dispatchEvent(new Event('change'));
-}
+// ============================================================
+// ELEMENTOS Y ESTADO
+// ============================================================
+const tipoSel     = document.getElementById('tipo');
+const comisionSel = document.getElementById('id_tipo_reunion');
+const nombreInput = document.getElementById('nombre');
+const params      = new URLSearchParams(window.location.search);
 
-// Fecha de hoy por defecto
-document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
-// Hora actual
-const ahora = new Date();
-document.getElementById('hora_inicio').value =
-    String(ahora.getHours()).padStart(2,'0') + ':' + String(ahora.getMinutes()).padStart(2,'0');
+// Comisión que viene preseleccionada desde los íconos (se usa solo la primera vez)
+let idComisionInicial = params.get('id_tipo_reunion');
 
-// Mostrar selector de comisión
-document.getElementById('tipo').addEventListener('change', async function () {
-    const esComision = this.value === 'comision';
-    document.getElementById('cont-tipo-comision').style.display = esComision ? 'block' : 'none';
-    if (esComision) await cargarTiposComision();
-
-    // Nombre automático
-    const nombres = {
-        sesion:   'Sesión Ordinaria',
-        asamblea: 'Asamblea Universitaria',
-        comision: '',
-    };
-    if (nombres[this.value] !== undefined && !document.getElementById('nombre').value) {
-        document.getElementById('nombre').value = nombres[this.value];
-    }
+// Si el usuario escribe el nombre a mano, dejamos de pisárselo
+let nombreManual = false;
+nombreInput.addEventListener('input', () => {
+    nombreManual = nombreInput.value.trim() !== '';
 });
 
-// Si viene id_tipo_reunion desde query param, seleccionarlo
+function esc(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
+function mensajeError(err) {
+    const errores = err?.data?.errors;
+    if (errores) return Object.values(errores).flat().join(' ');
+    return err?.data?.message ?? err?.message ?? 'Ocurrió un error inesperado.';
+}
+
+// ============================================================
+// FECHA Y HORA POR DEFECTO (hora local, no UTC)
+// ============================================================
+const ahora = new Date();
+document.getElementById('fecha').value =
+    `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
+document.getElementById('hora_inicio').value =
+    String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+
+// ============================================================
+// NOMBRE AUTOMÁTICO (igual venga de un ícono o del botón)
+// ============================================================
+function actualizarNombreAutomatico() {
+    if (nombreManual) return;
+
+    let nombre = '';
+
+    if (tipoSel.value === 'sesion') {
+        nombre = 'Sesión Ordinaria';
+    } else if (tipoSel.value === 'asamblea') {
+        nombre = 'Asamblea Universitaria';
+    } else if (tipoSel.value === 'comision' && comisionSel.value) {
+        nombre = `Comisión ${comisionSel.options[comisionSel.selectedIndex].text}`;
+    }
+
+    nombreInput.value = nombre;
+}
+
+// ============================================================
+// TIPO DE REUNIÓN Y COMISIONES
+// ============================================================
+async function alCambiarTipo() {
+    const esComision = tipoSel.value === 'comision';
+
+    document.getElementById('cont-tipo-comision').style.display = esComision ? 'block' : 'none';
+    comisionSel.required = esComision;
+
+    if (esComision) {
+        try {
+            await cargarTiposComision();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('mensaje').innerHTML =
+                '<div class="alert alert-danger">No se pudieron cargar las comisiones.</div>';
+        }
+    }
+
+    actualizarNombreAutomatico();
+}
+
 async function cargarTiposComision() {
     const tipos = await apiRequest('/api/tipos-reunion');
-    const sel   = document.getElementById('id_tipo_reunion');
-    sel.innerHTML = '<option value="">Seleccionar...</option>';
+
+    // Conserva lo elegido si se recarga (ej: al agregar una comisión al catálogo);
+    // la primera vez usa la que viene preseleccionada desde los íconos.
+    const seleccionada = comisionSel.value || idComisionInicial || '';
+    idComisionInicial = null;
+
+    comisionSel.innerHTML = '<option value="">Seleccionar...</option>';
     tipos.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.id;
         opt.textContent = t.nombre;
-        if (params.get('id_tipo_reunion') == t.id) opt.selected = true;
-        sel.appendChild(opt);
+        comisionSel.appendChild(opt);
     });
 
-    // Auto-nombre de comisión
-    sel.addEventListener('change', function () {
-        const texto = this.options[this.selectedIndex]?.text ?? '';
-        document.getElementById('nombre').value = texto ? `Comisión ${texto}` : '';
-    });
-    sel.dispatchEvent(new Event('change'));
+    comisionSel.value = seleccionada;
+    if (comisionSel.selectedIndex === -1) comisionSel.selectedIndex = 0;
 }
+
+// Los manejadores se registran UNA sola vez
+tipoSel.addEventListener('change', alCambiarTipo);
+comisionSel.addEventListener('change', actualizarNombreAutomatico);
+
+// Si se llegó desde un ícono (?tipo=...&id_tipo_reunion=...), se aplica ahora que
+// los manejadores ya existen: así queda igual que elegirlo a mano en el formulario.
+(async function inicializar() {
+    const tipoParam = params.get('tipo');
+    if (['sesion', 'comision', 'asamblea'].includes(tipoParam)) {
+        tipoSel.value = tipoParam;
+    }
+    await alCambiarTipo();
+})();
 
 // Submit
 document.getElementById('formCrear').addEventListener('submit', async (e) => {
@@ -164,7 +227,7 @@ document.getElementById('formCrear').addEventListener('submit', async (e) => {
 
     } catch (err) {
         document.getElementById('mensaje').innerHTML =
-            `<div class="alert alert-danger">Error al crear la reunión.</div>`;
+            `<div class="alert alert-danger">No se pudo crear la reunión: ${esc(mensajeError(err))}</div>`;
         console.error(err);
         btn.disabled = false;
     }
@@ -178,7 +241,7 @@ async function agregarComision() {
 
     try {
         await apiRequest('/api/tipos-reunion', 'POST', { nombre });
-        msg.innerHTML = `<span class="text-success">✓ Comisión "${nombre}" agregada.</span>`;
+        msg.innerHTML = `<span class="text-success">✓ Comisión "${esc(nombre)}" agregada.</span>`;
         document.getElementById('nuevaComision').value = '';
         await cargarTiposComision();
     } catch {
