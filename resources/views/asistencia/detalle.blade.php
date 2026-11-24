@@ -418,9 +418,9 @@ function renderVotaciones(votaciones, tipoReunion) {
             <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
                 <span>${v.orden}. ${esc(v.descripcion)}</span>
                 <div class="d-flex gap-3 small">
-                    <span class="text-success fw-bold">✅ ${v.resumen.afirmativo}</span>
-                    <span class="text-danger fw-bold">❌ ${v.resumen.negativo}</span>
-                    <span class="text-muted fw-bold">⬜ ${v.resumen.abstencion}</span>
+                    <span class="text-success fw-bold">Afirmativo ${v.resumen.afirmativo}</span>
+                    <span class="text-danger fw-bold">Negativo ${v.resumen.negativo}</span>
+                    <span class="text-muted fw-bold">Abstención ${v.resumen.abstencion}</span>
                     <span class="fw-bold border-start ps-3">Total: ${v.resumen.total}</span>
                 </div>
             </div>

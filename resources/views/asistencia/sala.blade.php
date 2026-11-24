@@ -39,14 +39,14 @@
             {{-- Botones --}}
             <a href="/asistencia/{{ $id }}/qr"
                target="_blank" class="btn btn-outline-secondary btn-sm">
-                📷 QR
+                QR
             </a>
             @if(auth()->user()?->hasAnyRole(['admin','consejo_superior']))
             <button class="btn btn-outline-warning btn-sm" onclick="abrirModalSalidaMasiva()">
-                ⬛ Salida masiva
+                Salida masiva
             </button>
             <button class="btn btn-outline-danger btn-sm" onclick="abrirModalCerrar()">
-                🔒 Cerrar reunión
+                Cerrar reunión
             </button>
             @endif
         </div>
@@ -75,6 +75,20 @@
 
     {{-- TAB: ASISTENCIA --}}
     <div id="tab-asistencia">
+
+        {{-- Buscador: queda fijo arriba mientras se recorre la lista --}}
+        <div class="sticky-top bg-body pt-2 pb-2 mb-2">
+            <div class="input-group">
+                <span class="input-group-text">🔍</span>
+                <input type="search" id="buscador-asistencia" class="form-control"
+                    placeholder="Buscar por apellido o nombre ..." autocomplete="off">
+                <button type="button" class="btn btn-outline-secondary" onclick="limpiarBusqueda()">
+                    Limpiar
+                </button>
+            </div>
+            <div id="buscador-info" class="small text-muted mt-1" style="min-height:1.2rem;"></div>
+        </div>
+
         <div id="estado-carga" class="text-muted">Cargando participantes...</div>
         <div id="contenido-asistencia"></div>
     </div>
@@ -254,6 +268,7 @@ async function cargarSala() {
 
         // Render asistencia
         renderAsistencia(data.participantes, data.personas_extra ?? []);
+        enfocarBuscador();
 
         // Select de oradores: solo los presentes
         datosParticipantes = data;
@@ -285,11 +300,11 @@ function renderAsistencia(participantes, personasExtra) {
     let html   = '';
 
     Object.entries(participantes).forEach(([claustro, listas]) => {
-        html += `<h5 class="border-bottom pb-1 mt-4 mb-3">${esc(claustro)}</h5>`;
+        html += `<div class="grupo-claustro"><h5 class="border-bottom pb-1 mt-4 mb-3">${esc(claustro)}</h5>`;
 
         listas.forEach(lista => {
             html += `
-                <div class="mb-3">
+                <div class="mb-3 bloque-lista">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <div class="text-muted small fw-semibold">
                             Lista #${esc(lista.numero)} — ${esc(lista.nombre)}
@@ -309,20 +324,25 @@ function renderAsistencia(participantes, personasExtra) {
             // Agregar a la lista global de personas
             lista.postulantes.forEach(p => todasLasPersonas.push(p));
         });
+
+        html += '</div>';   // cierra .grupo-claustro
     });
 
     // Personas extra (solo asamblea)
     if (personasExtra.length > 0) {
-        html += `<h5 class="border-bottom pb-1 mt-4 mb-3">Invitados / Extra</h5>
+        html += `<div class="grupo-claustro">
+            <h5 class="border-bottom pb-1 mt-4 mb-3">Invitados / Extra</h5>
             <table class="table table-sm table-hover">
                 <tbody>
                     ${personasExtra.map(p => filaPersona(p)).join('')}
                 </tbody>
-            </table>`;
+            </table>
+        </div>`;
         personasExtra.forEach(p => todasLasPersonas.push(p));
     }
 
     cont.innerHTML = html;
+    aplicarFiltroBusqueda();
 }
 
 function filaPersona(p, idLista) {
@@ -338,6 +358,7 @@ function filaPersona(p, idLista) {
             data-id="${p.id}"
             data-lista="${idLista ?? ''}"
             data-nombre="${esc(p.apellido)}, ${esc(p.nombre)}"
+            data-buscar="${normalizar(`${p.apellido} ${p.nombre} ${p.dni ?? ''}`)}"
             onclick="abrirModalEstadoDesdeFila(this)"
         >
             <td style="width:2rem;" class="text-muted">${esc(p.orden)}</td>
@@ -362,6 +383,102 @@ function badgeParaEstado(estado) {
         case 'salida':          return '<span class="badge bg-secondary">Retirado</span>';
         default:                return '<span class="badge bg-light text-muted">Ausente</span>';
     }
+}
+
+// ============================================================
+// BUSCADOR DE PERSONAS (asistencia)
+// Filtra mientras se escribe por apellido, nombre o DNI, en cualquier orden:
+// "juan perez" encuentra a "PEREZ, JUAN". Sin tildes ni mayúsculas ni signos:
+// "dangelo" encuentra a "D'ANGELO" y "munoz" a "MUÑOZ".
+// ============================================================
+
+function normalizar(texto) {
+    return String(texto ?? '')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // quita tildes (ñ -> n)
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, '')                          // quita puntos, comas, apóstrofes
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function aplicarFiltroBusqueda() {
+    const input = document.getElementById('buscador-asistencia');
+    if (!input) return;
+
+    const tokens = normalizar(input.value).split(' ').filter(Boolean);
+    let visibles = 0;
+
+    document.querySelectorAll('#contenido-asistencia tr.persona-row').forEach(fila => {
+        const coincide = tokens.every(t => (fila.dataset.buscar ?? '').includes(t));
+        fila.classList.toggle('d-none', !coincide);
+        if (coincide) visibles++;
+    });
+
+    // Oculta las listas y los claustros que quedaron sin filas visibles
+    ['.bloque-lista', '.grupo-claustro'].forEach(sel => {
+        document.querySelectorAll(`#contenido-asistencia ${sel}`).forEach(bloque => {
+            bloque.classList.toggle('d-none', !bloque.querySelector('tr.persona-row:not(.d-none)'));
+        });
+    });
+
+    const info = document.getElementById('buscador-info');
+    if (tokens.length === 0) {
+        info.textContent = 'Escribí para filtrar. Con un solo resultado, Enter abre a la persona.';
+        info.className   = 'small text-muted mt-1';
+    } else if (visibles === 0) {
+        info.textContent = 'Sin resultados.';
+        info.className   = 'small text-danger mt-1';
+    } else {
+        info.textContent = visibles === 1
+            ? '1 resultado — Enter para abrirlo'
+            : `${visibles} resultados`;
+        info.className   = 'small text-muted mt-1';
+    }
+}
+
+function limpiarBusqueda() {
+    const input = document.getElementById('buscador-asistencia');
+    input.value = '';
+    aplicarFiltroBusqueda();
+    input.focus();
+}
+
+// Deja el cursor listo para buscar a la siguiente persona
+function enfocarBuscador() {
+    const input = document.getElementById('buscador-asistencia');
+    if (!input) return;
+
+    // Solo con mouse/teclado: en una tablet abriría el teclado en pantalla sin que lo pidan
+    const conTeclado = window.matchMedia ? window.matchMedia('(pointer: fine)').matches : true;
+    if (!conTeclado) return;
+
+    input.focus();
+    input.select();
+}
+
+function iniciarBuscador() {
+    const input = document.getElementById('buscador-asistencia');
+
+    input.addEventListener('input', aplicarFiltroBusqueda);
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            limpiarBusqueda();
+            return;
+        }
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const visibles = document.querySelectorAll('#contenido-asistencia tr.persona-row:not(.d-none)');
+            if (visibles.length === 1) abrirModalEstadoDesdeFila(visibles[0]);
+        }
+    });
+
+    // Al cerrar el modal de estado, vuelve el cursor al buscador (texto seleccionado:
+    // lo próximo que se escriba reemplaza la búsqueda anterior)
+    document.getElementById('modalEstado').addEventListener('hidden.bs.modal', enfocarBuscador);
+
+    aplicarFiltroBusqueda();
 }
 
 // ============================================================
@@ -911,6 +1028,7 @@ async function cambiarTab(tab) {
 // ARRANQUE
 // ============================================================
 
+iniciarBuscador();
 cargarSala();
 
 </script>
