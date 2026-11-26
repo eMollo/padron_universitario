@@ -157,7 +157,7 @@ async function cargarDetalle() {
 
         renderEncabezado(data.reunion);
         renderDatosGenerales(data.reunion);
-        renderResumenPresencia(data.participantes, data.presentes);
+        renderResumenPresencia(data.participantes, data.pico_presentes);
         renderAsistentes(data.participantes, data.personas_extra ?? []);
         renderVotaciones(votaciones, data.reunion.tipo);
         renderOrdenPalabra(ordenPalabra);
@@ -225,12 +225,12 @@ function renderDatosGenerales(reunion) {
 // RESUMEN DE PRESENCIA
 // ============================================================
 
-function renderResumenPresencia(participantes, presentes) {
+function renderResumenPresencia(participantes, pico) {
     const cont = document.getElementById('resumen-presencia');
 
-    // Habilitados = solo los proclamados (la "P" de la sala: titulares y suplentes dentro
-    // de las bancas de cada lista). Los presentes se cuentan entre todos los integrantes
-    // de las listas, porque en lista abierta también puede asistir quien no fue proclamado.
+    // Habilitados = solo los proclamados (la "P" de la sala).
+    // Presentes / Virtuales = quienes ASISTIERON durante la reunión según el historial de
+    // entradas y salidas, aunque ya se hayan retirado (al cerrar, todos suelen estar "afuera").
     let totalHabilitados = 0;
     let totalPresentes   = 0;
     let totalVirtuales   = 0;
@@ -239,8 +239,10 @@ function renderResumenPresencia(participantes, presentes) {
         listas.forEach(lista => {
             lista.postulantes.forEach(p => {
                 if (p.proclamado) totalHabilitados++;
-                if (p.estado === 'entrada')         totalPresentes++;
-                if (p.estado === 'entrada_virtual') totalVirtuales++;
+                if (p.asistio) {
+                    if (p.modalidad === 'virtual') totalVirtuales++;
+                    else                           totalPresentes++;   // presente o mixta
+                }
             });
         });
     });
@@ -254,13 +256,14 @@ function renderResumenPresencia(participantes, presentes) {
             <div class="col-6">
                 <div class="border rounded p-2">
                     <div class="fs-3 fw-bold text-success">${totalPresentes}</div>
-                    <div class="text-muted small">Presentes</div>
+                    <div class="text-muted small"
+                         title="Asistieron de forma presencial (incluye a quienes estuvieron también de forma virtual)">Presentes</div>
                 </div>
             </div>
             <div class="col-6">
                 <div class="border rounded p-2">
                     <div class="fs-3 fw-bold text-info">${totalVirtuales}</div>
-                    <div class="text-muted small">Virtuales</div>
+                    <div class="text-muted small" title="Asistieron solo de forma virtual">Virtuales</div>
                 </div>
             </div>
             <div class="col-6">
@@ -276,6 +279,9 @@ function renderResumenPresencia(participantes, presentes) {
                 </div>
             </div>
         </div>
+        <div class="text-muted small mt-3">
+            Máximo de presentes al mismo tiempo: <strong>${pico ?? 0}</strong>
+        </div>
     `;
 }
 
@@ -283,74 +289,112 @@ function renderResumenPresencia(participantes, presentes) {
 // TABLA DE ASISTENTES
 // ============================================================
 
-function renderAsistentes(participantes, personasExtra) {
-    const cont     = document.getElementById('tabla-asistentes');
-    const subtitulo = document.getElementById('subtitulo-asistentes');
-    let html       = '';
-    let totalMostrados = 0;
+const ENCABEZADO_ASISTENTES = `
+    <thead class="table-light">
+        <tr>
+            <th class="ps-4">#</th>
+            <th>Apellido y nombre</th>
+            <th>Modalidad</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Tiempo</th>
+        </tr>
+    </thead>
+`;
 
+function formatearMinutos(min) {
+    if (!min || min < 1) return 'menos de 1 min';
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+function badgeModalidad(modalidad) {
+    switch (modalidad) {
+        case 'virtual': return '<span class="badge bg-info text-dark">Virtual</span>';
+        case 'mixta':   return '<span class="badge bg-primary" title="Estuvo de forma presencial y virtual">Mixta</span>';
+        default:        return '<span class="badge bg-success">Presente</span>';
+    }
+}
+
+// Una fila de la tabla: qué hizo la persona durante toda la reunión
+function filaAsistente(p, mostrarOrden) {
+    const proclamado = p.proclamado
+        ? '<span class="badge bg-success ms-1" style="font-size:.6rem;">P</span>'
+        : '';
+
+    const ingresos = p.entradas > 1
+        ? ` <span class="text-muted small">(${p.entradas} ingresos)</span>`
+        : '';
+
+    const salida = p.sigue_presente
+        ? '<span class="text-muted">hasta el cierre</span>'
+        : esc(p.ultima_salida ?? '—');
+
+    return `
+        <tr>
+            <td class="ps-4 text-muted">${mostrarOrden ? esc(p.orden) : '—'}</td>
+            <td>${esc(p.apellido)}, ${esc(p.nombre)}${proclamado}</td>
+            <td>${badgeModalidad(p.modalidad)}</td>
+            <td>${esc(p.primera_entrada ?? '—')}${ingresos}</td>
+            <td>${salida}</td>
+            <td>${esc(formatearMinutos(p.minutos))}</td>
+        </tr>
+    `;
+}
+
+function renderAsistentes(participantes, personasExtra) {
+    const cont      = document.getElementById('tabla-asistentes');
+    const subtitulo = document.getElementById('subtitulo-asistentes');
+    let html  = '';
+    let total = 0;
+
+    // Se muestra a quien ASISTIÓ en algún momento (según el historial), esté o no
+    // presente al final: en una reunión cerrada, todos suelen haberse retirado.
     Object.entries(participantes).forEach(([claustro, listas]) => {
-        html += `
-            <div class="px-3 pt-3 pb-1">
-                <strong>${esc(claustro)}</strong>
-            </div>
-        `;
+        let htmlClaustro = '';
 
         listas.forEach(lista => {
-            // Solo mostrar listas donde alguien tuvo movimiento
-            const conMovimiento = lista.postulantes.filter(p => p.estado !== 'ausente');
-            if (conMovimiento.length === 0) return;
+            const asistentes = lista.postulantes.filter(p => p.asistio);
+            if (asistentes.length === 0) return;
 
-            html += `
+            total += asistentes.length;
+
+            htmlClaustro += `
                 <div class="px-3 pb-1">
                     <span class="text-muted small">
                         Lista #${esc(lista.numero)} — ${esc(lista.nombre)}
                     </span>
                 </div>
                 <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">#</th>
-                            <th>Apellido y nombre</th>
-                            <th>Estado final</th>
-                        </tr>
-                    </thead>
+                    ${ENCABEZADO_ASISTENTES}
                     <tbody>
-                        ${lista.postulantes.map(p => {
-                            if (p.estado === 'ausente') return '';
-                            totalMostrados++;
-                            const persona = `${esc(p.apellido)}, ${esc(p.nombre)}`;
-                            const badge   = badgeEstado(p.estado);
-                            const proc    = p.proclamado
-                                ? '<span class="badge bg-success ms-1" style="font-size:.6rem;">P</span>'
-                                : '';
-                            return `
-                                <tr>
-                                    <td class="ps-4 text-muted">${p.orden}</td>
-                                    <td>${persona}${proc}</td>
-                                    <td>${badge}</td>
-                                </tr>
-                            `;
-                        }).join('')}
+                        ${asistentes.map(p => filaAsistente(p, true)).join('')}
                     </tbody>
                 </table>
             `;
         });
+
+        if (htmlClaustro) {
+            html += `
+                <div class="px-3 pt-3 pb-1"><strong>${esc(claustro)}</strong></div>
+                ${htmlClaustro}
+            `;
+        }
     });
 
     // Personas extra (asamblea)
-    if (personasExtra.length > 0) {
+    const extras = personasExtra.filter(p => p.asistio);
+    if (extras.length > 0) {
+        total += extras.length;
+
         html += `
             <div class="px-3 pt-3 pb-1"><strong>Invitados / Extra</strong></div>
             <table class="table table-sm mb-0">
+                ${ENCABEZADO_ASISTENTES}
                 <tbody>
-                    ${personasExtra.map(p => `
-                        <tr>
-                            <td class="ps-4 text-muted">—</td>
-                            <td>${esc(p.apellido)}, ${esc(p.nombre)}</td>
-                            <td>${badgeEstado(p.estado)}</td>
-                        </tr>
-                    `).join('')}
+                    ${extras.map(p => filaAsistente(p, false)).join('')}
                 </tbody>
             </table>
         `;
@@ -360,17 +404,8 @@ function renderAsistentes(participantes, personasExtra) {
         html = `<p class="text-muted p-3 mb-0">No se registraron asistentes.</p>`;
     }
 
-    subtitulo.textContent = `${totalMostrados} persona${totalMostrados !== 1 ? 's' : ''} con movimiento`;
+    subtitulo.textContent = `${total} persona${total !== 1 ? 's' : ''} asistieron`;
     cont.innerHTML = html;
-}
-
-function badgeEstado(estado) {
-    switch (estado) {
-        case 'entrada':         return '<span class="badge bg-success">Presente</span>';
-        case 'entrada_virtual': return '<span class="badge bg-info text-dark">Virtual</span>';
-        case 'salida':          return '<span class="badge bg-secondary">Se retiró</span>';
-        default:                return '<span class="badge bg-light text-muted">Ausente</span>';
-    }
 }
 
 // ============================================================
@@ -418,9 +453,9 @@ function renderVotaciones(votaciones, tipoReunion) {
             <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
                 <span>${v.orden}. ${esc(v.descripcion)}</span>
                 <div class="d-flex gap-3 small">
-                    <span class="text-success fw-bold">Afirmativo ${v.resumen.afirmativo}</span>
-                    <span class="text-danger fw-bold">Negativo ${v.resumen.negativo}</span>
-                    <span class="text-muted fw-bold">Abstención ${v.resumen.abstencion}</span>
+                    <span class="text-success fw-bold">✅ ${v.resumen.afirmativo}</span>
+                    <span class="text-danger fw-bold">❌ ${v.resumen.negativo}</span>
+                    <span class="text-muted fw-bold">⬜ ${v.resumen.abstencion}</span>
                     <span class="fw-bold border-start ps-3">Total: ${v.resumen.total}</span>
                 </div>
             </div>

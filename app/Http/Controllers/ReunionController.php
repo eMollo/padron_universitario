@@ -138,6 +138,10 @@ class ReunionController extends Controller
             ->get()
             ->keyBy('id_persona');
 
+        // Historial de asistencia (de todos los movimientos, no solo el último): permite
+        // reportar quién estuvo, cuánto y cómo aunque al final todos se hayan retirado
+        $historial = $reunion->historialAsistencia();
+
         // Obtener listas oficializadas con postulantes agrupadas por claustro
         // El anio lo inferimos del año de la reunión
         $anio = $reunion->fecha->year;
@@ -157,7 +161,8 @@ class ReunionController extends Controller
         ->get();
 
         // Estructurar: claustro → listas → postulantes con estado actual
-        $resultado = [];
+        $resultado   = [];
+        $idsEnListas = [];
 
         foreach ($listas as $lista) {
             $claustroNombre = $lista->tipo === 'decano'
@@ -171,12 +176,12 @@ class ReunionController extends Controller
             $postulantes = $lista->postulantes
                 ->sortBy(fn($p) => ($p->tipo === 'titular' ? 0 : 1) * 1000 + $p->orden)
                 ->values()
-                ->map(function ($p) use ($lista, $ultimosMovimientos) {
+                ->map(function ($p) use ($lista, $ultimosMovimientos, $historial) {
                 $ultimo     = $ultimosMovimientos[$p->id_persona] ?? null;
                 $estado     = $ultimo ? $ultimo->tipo : 'ausente';
                 $proclamado = $p->orden <= $lista->bancas;
 
-                return [
+                return array_merge([
                     'id'            => $p->id_persona,
                     'orden'         => $p->orden,
                     'tipo_postulante' => $p->tipo, // titular / suplente
@@ -184,10 +189,12 @@ class ReunionController extends Controller
                     'nombre'        => $p->persona->nombre   ?? '',
                     'apellido'      => $p->persona->apellido ?? '',
                     'dni'           => $p->persona->dni      ?? '',
-                    'estado'        => $estado, // entrada / entrada_virtual / salida / ausente
+                    'estado'        => $estado, // entrada / entrada_virtual / salida / ausente (estado ACTUAL)
                     'ultimo_movimiento_at' => $ultimo?->created_at,
-                ];
+                ], $this->camposHistorial($historial['personas'], $p->id_persona));
             });
+
+            $idsEnListas = array_merge($idsEnListas, $lista->postulantes->pluck('id_persona')->all());
 
             $resultado[$claustroNombre][] = [
                 'id_lista'  => $lista->id,
@@ -204,30 +211,23 @@ class ReunionController extends Controller
         // Para Asamblea: agregar personas extra registradas
         $personasExtra = [];
         if ($reunion->tipo === 'asamblea') {
-            $idsYaIncluidos = collect($resultado)
-                ->flatten(2)
-                ->pluck('postulantes')
-                ->flatten(1)
-                ->pluck('id')
-                ->unique();
-
             $personasExtra = AsistenciaMovimiento::query()
                 ->with('persona')
                 ->where('id_reunion', $id)
-                ->whereNotIn('id_persona', $idsYaIncluidos)
+                ->whereNotIn('id_persona', $idsEnListas)
                 ->select('id_persona')
                 ->distinct()
                 ->get()
-                ->map(function ($m) use ($ultimosMovimientos) {
+                ->map(function ($m) use ($ultimosMovimientos, $historial) {
                     $ultimo = $ultimosMovimientos[$m->id_persona] ?? null;
-                    return [
+                    return array_merge([
                         'id'       => $m->id_persona,
                         'nombre'   => $m->persona->nombre   ?? '',
                         'apellido' => $m->persona->apellido ?? '',
                         'dni'      => $m->persona->dni      ?? '',
                         'estado'   => $ultimo ? $ultimo->tipo : 'ausente',
                         'extra'    => true,
-                    ];
+                    ], $this->camposHistorial($historial['personas'], $m->id_persona));
                 });
         }
 
@@ -235,6 +235,7 @@ class ReunionController extends Controller
             'reunion'        => $reunion,
             'participantes'  => $resultado,
             'personas_extra' => $personasExtra,
+            'pico_presentes' => $historial['pico'],
             'presentes'      => $ultimosMovimientos
                 ->filter(fn($m) => in_array($m->tipo, ['entrada', 'entrada_virtual']))
                 ->count(),
@@ -647,5 +648,24 @@ class ReunionController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Campos de historial de una persona (lo que hizo durante toda la reunión).
+     * $historial: el array 'personas' de Reunion::historialAsistencia().
+     */
+    private function camposHistorial(array $historial, int $idPersona): array
+    {
+        $h = $historial[$idPersona] ?? null;
+
+        return [
+            'asistio'         => $h !== null,
+            'modalidad'       => $h['modalidad'] ?? null,
+            'primera_entrada' => $h['primera_entrada'] ?? null,
+            'ultima_salida'   => $h['ultima_salida'] ?? null,
+            'minutos'         => $h['minutos'] ?? 0,
+            'entradas'        => $h['entradas'] ?? 0,
+            'sigue_presente'  => $h['sigue_presente'] ?? false,
+        ];
     }
 }
