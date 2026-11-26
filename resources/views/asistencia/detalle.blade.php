@@ -290,6 +290,15 @@ function renderResumenPresencia(participantes, pico) {
 // ============================================================
 
 const ENCABEZADO_ASISTENTES = `
+    <colgroup>
+        <col style="width: 4%;">
+        <col style="width: 40%;">
+        <col style="width: 14%;">
+        <col style="width: 13%;">
+        <col style="width: 16%;">
+        <col style="width: 13%;">
+    </colgroup>
+
     <thead class="table-light">
         <tr>
             <th class="ps-4">#</th>
@@ -367,7 +376,7 @@ function renderAsistentes(participantes, personasExtra) {
                         Lista #${esc(lista.numero)} — ${esc(lista.nombre)}
                     </span>
                 </div>
-                <table class="table table-sm mb-0">
+                <table class="table table-sm mb-0 tabla-asistentes" style="width: 100%; table-layout: fixed;">
                     ${ENCABEZADO_ASISTENTES}
                     <tbody>
                         ${asistentes.map(p => filaAsistente(p, true)).join('')}
@@ -391,7 +400,7 @@ function renderAsistentes(participantes, personasExtra) {
 
         html += `
             <div class="px-3 pt-3 pb-1"><strong>Invitados / Extra</strong></div>
-            <table class="table table-sm mb-0">
+            <table class="table table-sm mb-0 tabla-asistentes" style="width: 100%; table-layout: fixed;">
                 ${ENCABEZADO_ASISTENTES}
                 <tbody>
                     ${extras.map(p => filaAsistente(p, false)).join('')}
@@ -453,9 +462,9 @@ function renderVotaciones(votaciones, tipoReunion) {
             <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
                 <span>${v.orden}. ${esc(v.descripcion)}</span>
                 <div class="d-flex gap-3 small">
-                    <span class="text-success fw-bold">✅ ${v.resumen.afirmativo}</span>
-                    <span class="text-danger fw-bold">❌ ${v.resumen.negativo}</span>
-                    <span class="text-muted fw-bold">⬜ ${v.resumen.abstencion}</span>
+                    <span class="text-success fw-bold">Afirmativo ${v.resumen.afirmativo}</span>
+                    <span class="text-danger fw-bold">Negativo ${v.resumen.negativo}</span>
+                    <span class="text-muted fw-bold">Abstención ${v.resumen.abstencion}</span>
                     <span class="fw-bold border-start ps-3">Total: ${v.resumen.total}</span>
                 </div>
             </div>
@@ -518,7 +527,7 @@ function renderOrdenPalabra(turnos) {
                         <td>${esc(t.persona?.apellido ?? '—')}, ${esc(t.persona?.nombre ?? '—')}</td>
                         <td>
                             ${t.atendido
-                                ? '<span class="badge bg-light text-muted">Atendido</span>'
+                                ? '<span class="badge bg-light text-muted">Ya finalizó</span>'
                                 : '<span class="badge bg-warning text-dark">Pendiente</span>'}
                         </td>
                     </tr>

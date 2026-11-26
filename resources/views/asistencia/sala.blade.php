@@ -701,9 +701,9 @@ function renderOrdenPalabra(turnos) {
                             ${!t.atendido
                                 ? `<button class="btn btn-sm btn-outline-success"
                                        onclick="atenderTurno(${t.id})">
-                                       ✓ Atendido
+                                       ✓ En espera
                                    </button>`
-                                : '<span class="badge bg-light text-muted">Atendido</span>'}
+                                : '<span class="badge bg-light text-muted">Finalizó</span>'}
                         </td>
                     </tr>
                 `).join('')}
